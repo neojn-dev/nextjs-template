@@ -236,11 +236,26 @@ Write-Host ""
 # Verify database was created
 Write-Info "Verifying database setup..."
 try {
-    $dbCheckResult = npx prisma db execute --stdin <<< "SELECT COUNT(*) as record_count FROM sqlite_master WHERE type='table';" 2>&1
-    Write-Success "Database verification passed!"
+    # Check if database file exists (for SQLite)
+    $dbPath = "prisma/dev.db"
+    if (Test-Path $dbPath) {
+        Write-Success "Database file verified at: $dbPath"
+    }
+    else {
+        Write-Warning "Database file not found at $dbPath (this may be normal if using a different database provider)"
+    }
+    
+    # Try to run a simple Prisma command to verify connection
+    $testConnection = npx prisma db push --skip-generate 2>&1 | Out-String
+    if ($testConnection -match "error" -or $testConnection -match "Error") {
+        Write-Warning "Database connection test showed warnings, but setup may still work."
+    }
+    else {
+        Write-Success "Database connection verified!"
+    }
 }
 catch {
-    Write-Warning "Could not fully verify database, but setup may still be successful."
+    Write-Warning "Could not fully verify database, but setup may still be successful. You can test by logging in after the server starts."
 }
 
 # Step 5: Final Setup Check
