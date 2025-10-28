@@ -146,6 +146,24 @@ Write-Host ""
 # Step 4: Database Setup
 Write-Step "Setting up database..."
 
+# Check if Prisma is installed
+Write-Info "Checking Prisma installation..."
+try {
+    $prismaVersion = npx prisma --version 2>&1
+    Write-Success "Prisma found: $prismaVersion"
+}
+catch {
+    Write-Error "Prisma is not properly installed. Attempting to reinstall..."
+    try {
+        npm install prisma @prisma/client
+        Write-Success "Prisma reinstalled successfully!"
+    }
+    catch {
+        Write-Error "Failed to install Prisma. Please check your Node.js installation."
+        exit 1
+    }
+}
+
 # Generate Prisma client
 Write-Info "Generating Prisma client..."
 try {
@@ -154,7 +172,15 @@ try {
 }
 catch {
     Write-Error "Failed to generate Prisma client."
-    exit 1
+    Write-Info "Trying alternative method..."
+    try {
+        npx prisma generate
+        Write-Success "Prisma client generated using alternative method!"
+    }
+    catch {
+        Write-Error "Failed to generate Prisma client even with alternative method."
+        exit 1
+    }
 }
 
 # Run database migrations
@@ -165,25 +191,57 @@ try {
 }
 catch {
     Write-Error "Failed to run database migrations."
-    exit 1
+    Write-Info "Trying alternative method..."
+    try {
+        npx prisma migrate deploy
+        Write-Success "Database migrations completed using alternative method!"
+    }
+    catch {
+        Write-Error "Failed to run migrations even with alternative method."
+        exit 1
+    }
 }
 
 # Seed the database
 Write-Info "Seeding database with sample data..."
-try {
-    npm run db:seed
-    Write-Success "Database seeded successfully!"
-    Write-Info "Sample data includes:"
-    Write-Info "  - 3 test users: admin, manager, analyst"
-    Write-Info "  - 50 sample MyData records"
-    Write-Info "  - Sample file uploads"
-}
-catch {
-    Write-Error "Failed to seed database."
-    exit 1
+$seedRetries = 0
+$seedMaxRetries = 3
+$seedSuccess = $false
+
+while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
+    try {
+        npm run db:seed
+        Write-Success "Database seeded successfully!"
+        Write-Info "Sample data includes:"
+        Write-Info "  - 3 test users: admin, manager, analyst"
+        Write-Info "  - 50 sample MyData records"
+        Write-Info "  - Sample file uploads"
+        $seedSuccess = $true
+    }
+    catch {
+        $seedRetries++
+        if ($seedRetries -lt $seedMaxRetries) {
+            Write-Warning "Database seeding failed (Attempt $seedRetries/$seedMaxRetries). Retrying..."
+            Start-Sleep -Seconds 2
+        }
+        else {
+            Write-Error "Failed to seed database after $seedMaxRetries attempts."
+            Write-Warning "The database may not have sample data. You can seed it manually later with: npm run db:seed"
+        }
+    }
 }
 
 Write-Host ""
+
+# Verify database was created
+Write-Info "Verifying database setup..."
+try {
+    $dbCheckResult = npx prisma db execute --stdin <<< "SELECT COUNT(*) as record_count FROM sqlite_master WHERE type='table';" 2>&1
+    Write-Success "Database verification passed!"
+}
+catch {
+    Write-Warning "Could not fully verify database, but setup may still be successful."
+}
 
 # Step 5: Final Setup Check
 Write-Step "Verifying setup..."
@@ -230,6 +288,46 @@ Write-Step "Starting development server..."
 Write-Info "The server will start on http://localhost:3000"
 Write-Info "Press Ctrl+C to stop the server"
 Write-Host ""
+
+# Ask user if they want to open Prisma Studio
+Write-Host ""
+Write-Step "Prisma Studio Option"
+Write-Host "Would you like to open Prisma Studio in a new window?"
+Write-Host "  1. Yes - Open Prisma Studio"
+Write-Host "  2. No - Skip Prisma Studio"
+Write-Host ""
+
+$prismaChoice = Read-Host "Enter your choice (1 or 2)"
+
+if ($prismaChoice -eq "1") {
+    Write-Success "Opening Prisma Studio in a new window..."
+    Write-Host ""
+    Write-Info "Note: Prisma Studio will open in your default browser at http://localhost:5555"
+    Write-Info "The browser window may take a few seconds to open."
+    Write-Host ""
+    
+    # Wait a moment before starting Prisma Studio
+    Start-Sleep -Seconds 2
+    
+    # Open Prisma Studio in a new PowerShell window
+    try {
+        Start-Process powershell -ArgumentList "cd '$PWD'; npm run db:studio" -WindowStyle Normal
+        Write-Success "Prisma Studio launched in new window!"
+        Write-Info "Starting development server on http://localhost:3000..."
+    }
+    catch {
+        Write-Warning "Could not open Prisma Studio in new window."
+        Write-Info "You can manually open it later with: npm run db:studio"
+    }
+    
+    Write-Host ""
+}
+else {
+    Write-Info "Skipping Prisma Studio."
+    Write-Info "You can open it later with: npm run db:studio"
+    Write-Host ""
+}
+
 Write-Success "LAUNCHING NextJS Template App..."
 
 # Wait a moment for user to read
