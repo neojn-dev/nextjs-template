@@ -174,7 +174,7 @@ try {
     npm run db:seed
     Write-Success "Database seeded successfully!"
     Write-Info "Sample data includes:"
-    Write-Info "  - 3 test users (admin`; manager`; analyst)"
+    Write-Info '  - 3 test users: admin, manager, analyst'
     Write-Info "  - 50 sample MyData records"
     Write-Info "  - Sample file uploads"
 }
