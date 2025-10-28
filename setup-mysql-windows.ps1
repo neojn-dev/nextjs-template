@@ -1,5 +1,5 @@
-# NextJS Template App + MySQL Setup & Run Script (PowerShell)
-# Complete setup automation for Windows including MySQL database configuration
+# MySQL Complete Setup Script for Windows
+# This script automates MySQL installation, database setup, and NextJS app initialization
 
 $ErrorActionPreference = "Stop"
 
@@ -38,16 +38,17 @@ function Write-Info {
 
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host "         NextJS Template App + MySQL Complete Setup          " -ForegroundColor Magenta
+Write-Host "            MySQL + NextJS Template App Setup                " -ForegroundColor Magenta
 Write-Host "                    For Windows                              " -ForegroundColor Magenta
 Write-Host "                                                            " -ForegroundColor Magenta
 Write-Host "  This script will:                                         " -ForegroundColor Magenta
-Write-Host "  - Check/Start MySQL Server                                " -ForegroundColor Magenta
-Write-Host "  - Configure database connection                           " -ForegroundColor Magenta
-Write-Host "  - Install dependencies                                    " -ForegroundColor Magenta
-Write-Host "  - Generate Prisma client                                  " -ForegroundColor Magenta
+Write-Host "  - Check MySQL installation                                " -ForegroundColor Magenta
+Write-Host "  - Download MySQL if needed                                " -ForegroundColor Magenta
+Write-Host "  - Install MySQL Server                                    " -ForegroundColor Magenta
+Write-Host "  - Create database                                         " -ForegroundColor Magenta
+Write-Host "  - Configure .env file                                     " -ForegroundColor Magenta
 Write-Host "  - Run database migrations                                 " -ForegroundColor Magenta
-Write-Host "  - Seed test data and users                                " -ForegroundColor Magenta
+Write-Host "  - Seed test data                                          " -ForegroundColor Magenta
 Write-Host "  - Start development server                                " -ForegroundColor Magenta
 Write-Host "============================================================" -ForegroundColor Magenta
 Write-Host ""
@@ -93,19 +94,10 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
 $npmVersion = npm --version
 Write-Success "npm found: v$npmVersion"
 
-# Check git (optional)
-if (Get-Command git -ErrorAction SilentlyContinue) {
-    $gitVersion = git --version
-    Write-Success "Git found: $gitVersion"
-}
-else {
-    Write-Warning "Git is not installed (optional)"
-}
-
 Write-Host ""
 
 # ============================================================
-# STEP 3: CHECK/START MYSQL
+# STEP 3: CHECK/INSTALL MYSQL
 # ============================================================
 
 Write-Step "Checking MySQL installation..."
@@ -133,15 +125,17 @@ if ($mysqlInstalled) {
     }
 }
 else {
-    Write-Warning "MySQL80 service not found"
+    Write-Warning "MySQL80 service not found. Need to download and install MySQL."
     Write-Info ""
-    Write-Info "MANUAL MYSQL INSTALLATION REQUIRED:"
-    Write-Info "  1. Download: https://dev.mysql.com/downloads/mysql/"
-    Write-Info "  2. Run installer (mysql-installer-web-community-8.0.x.msi)"
-    Write-Info "  3. Choose 'Developer Default' setup type"
-    Write-Info "  4. Complete installation with all default options"
-    Write-Info "  5. Set a MySQL root password (remember it!)"
-    Write-Info "  6. Run this script again"
+    Write-Info "Please download and install MySQL manually:"
+    Write-Info "  1. Go to: https://dev.mysql.com/downloads/mysql/"
+    Write-Info "  2. Download: MySQL Community Server (Windows installer)"
+    Write-Info "  3. Run the installer"
+    Write-Info "  4. Choose 'Developer Default' setup type"
+    Write-Info "  5. Follow all installation steps"
+    Write-Info "  6. Set a MySQL root password (remember it!)"
+    Write-Info "  7. Complete the installation"
+    Write-Info "  8. Run this script again"
     Write-Info ""
     
     $continue = Read-Host "Have you installed MySQL? (yes/no)"
@@ -151,7 +145,7 @@ else {
         exit 1
     }
     
-    # Check again
+    # Check again after user confirms installation
     $mysqlInstalled = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
     if (-not $mysqlInstalled) {
         Write-Error "MySQL80 service still not found"
@@ -164,20 +158,20 @@ else {
 Write-Host ""
 
 # ============================================================
-# STEP 4: TEST MYSQL CONNECTION & GET PASSWORD
+# STEP 4: TEST MYSQL CONNECTION
 # ============================================================
 
-Write-Step "Configuring MySQL connection..."
+Write-Step "Testing MySQL connection..."
 
+# Get root password from user
 Write-Info "Enter your MySQL root password:"
-Write-Info "(If no password was set during installation, just press Enter)"
+Write-Info "(If you set no password during installation, press Enter)"
 $rootPassword = Read-Host -AsSecureString "Root Password"
 
-# Convert to plain text
+# Convert to plain text for mysql command
 $rootPasswordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($rootPassword))
 
 # Test connection
-Write-Info "Testing MySQL connection..."
 try {
     $testConnection = mysql -u root -p"$rootPasswordPlain" -e "SELECT 1;" 2>&1 | Out-String
     Write-Success "MySQL connection successful!"
@@ -210,25 +204,22 @@ Write-Host ""
 # STEP 6: UPDATE .ENV FILE
 # ============================================================
 
-Write-Step "Updating environment configuration..."
+Write-Step "Updating .env file..."
 
 $envFile = ".env"
 
 if (-not (Test-Path $envFile)) {
     Write-Warning ".env file not found"
-    Write-Info "Creating .env file..."
+    Write-Info "Creating .env file from .env.example..."
     
     if (Test-Path ".env.example") {
         Copy-Item -Path ".env.example" -Destination ".env"
-        Write-Success ".env file created from .env.example"
+        Write-Success ".env file created"
     }
     else {
         Write-Error ".env.example not found"
         exit 1
     }
-}
-else {
-    Write-Success ".env file already exists"
 }
 
 # Read current .env
@@ -253,7 +244,7 @@ else {
 # Write back to .env
 Set-Content -Path $envFile -Value $envContent
 
-Write-Success ".env file updated with MySQL connection"
+Write-Success ".env file updated with MySQL connection string"
 
 Write-Host ""
 
@@ -261,12 +252,11 @@ Write-Host ""
 # STEP 7: INSTALL DEPENDENCIES
 # ============================================================
 
-Write-Step "Installing dependencies..."
-Write-Info "This may take a few minutes..."
+Write-Step "Installing npm dependencies..."
 
 try {
     npm install
-    Write-Success "Dependencies installed successfully!"
+    Write-Success "Dependencies installed successfully"
 }
 catch {
     Write-Error "Failed to install dependencies"
@@ -276,47 +266,22 @@ catch {
 Write-Host ""
 
 # ============================================================
-# STEP 8: CHECK PRISMA
-# ============================================================
-
-Write-Step "Checking Prisma installation..."
-
-try {
-    $prismaVersion = npx prisma --version 2>&1
-    Write-Success "Prisma found: $prismaVersion"
-}
-catch {
-    Write-Error "Prisma is not properly installed"
-    Write-Info "Attempting to reinstall..."
-    
-    try {
-        npm install prisma @prisma/client
-        Write-Success "Prisma reinstalled successfully!"
-    }
-    catch {
-        Write-Error "Failed to install Prisma"
-        exit 1
-    }
-}
-
-Write-Host ""
-
-# ============================================================
-# STEP 9: GENERATE PRISMA CLIENT
+# STEP 8: GENERATE PRISMA CLIENT
 # ============================================================
 
 Write-Step "Generating Prisma client..."
 
 try {
     npm run db:generate
-    Write-Success "Prisma client generated successfully!"
+    Write-Success "Prisma client generated"
 }
 catch {
-    Write-Warning "npm script failed, trying alternative method..."
+    Write-Warning "Failed to generate Prisma client with npm script"
+    Write-Info "Trying with npx..."
     
     try {
         npx prisma generate
-        Write-Success "Prisma client generated!"
+        Write-Success "Prisma client generated successfully"
     }
     catch {
         Write-Error "Failed to generate Prisma client"
@@ -327,21 +292,22 @@ catch {
 Write-Host ""
 
 # ============================================================
-# STEP 10: RUN DATABASE MIGRATIONS
+# STEP 9: RUN DATABASE MIGRATIONS
 # ============================================================
 
 Write-Step "Running database migrations..."
 
 try {
     npm run db:migrate
-    Write-Success "Database migrations completed!"
+    Write-Success "Database migrations completed"
 }
 catch {
-    Write-Warning "npm script failed, trying alternative method..."
+    Write-Warning "Failed to run migrations with npm script"
+    Write-Info "Trying with npx..."
     
     try {
         npx prisma migrate deploy
-        Write-Success "Database migrations completed!"
+        Write-Success "Database migrations completed"
     }
     catch {
         Write-Error "Failed to run database migrations"
@@ -352,10 +318,10 @@ catch {
 Write-Host ""
 
 # ============================================================
-# STEP 11: SEED DATABASE
+# STEP 10: SEED DATABASE
 # ============================================================
 
-Write-Step "Seeding database with sample data..."
+Write-Step "Seeding database with test data..."
 
 $seedRetries = 0
 $seedMaxRetries = 3
@@ -365,9 +331,9 @@ while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
     try {
         npm run db:seed
         Write-Success "Database seeded successfully!"
-        Write-Info "Sample data includes:"
+        Write-Info "Test data includes:"
         Write-Info "  - 3 test users: admin, manager, analyst"
-        Write-Info "  - 50 sample MyData records"
+        Write-Info "  - Sample data records"
         Write-Info "  - Sample file uploads"
         $seedSuccess = $true
     }
@@ -379,7 +345,7 @@ while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
         }
         else {
             Write-Warning "Failed to seed database after $seedMaxRetries attempts"
-            Write-Warning "You can seed manually later with: npm run db:seed"
+            Write-Warning "The database may not have sample data. You can seed it manually later with: npm run db:seed"
         }
     }
 }
@@ -387,95 +353,58 @@ while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
 Write-Host ""
 
 # ============================================================
-# STEP 12: VERIFY DATABASE
+# STEP 11: VERIFY DATABASE SETUP
 # ============================================================
 
 Write-Step "Verifying database setup..."
 
 try {
+    # Check if database file exists and has tables
     $tableCount = mysql -u root -p"$rootPasswordPlain" next_template_db -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'next_template_db';" 2>&1 | Select-Object -Last 1
+    
     Write-Success "Database verification passed!"
     Write-Info "Database tables created successfully"
 }
 catch {
-    Write-Warning "Could not verify database, but setup may still be successful"
+    Write-Warning "Could not fully verify database, but setup may still be successful"
 }
 
 Write-Host ""
 
 # ============================================================
-# STEP 13: VERIFY REQUIRED FILES
+# STEP 12: DISPLAY SETUP SUMMARY
 # ============================================================
 
-Write-Step "Verifying setup files..."
-
-$requiredFiles = @("package.json", "next.config.js", "prisma/schema.prisma", ".env")
-
-foreach ($file in $requiredFiles) {
-    if (Test-Path $file) {
-        Write-Success "$file exists"
-    }
-    else {
-        Write-Error "$file is missing"
-        exit 1
-    }
-}
-
+Write-Step "Setup Information"
 Write-Host ""
-
-# ============================================================
-# STEP 14: DISPLAY SETUP SUMMARY
-# ============================================================
-
-Write-Step "Setup Completed Successfully!"
+Write-Host "SETUP COMPLETED SUCCESSFULLY!" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host "SETUP COMPLETED SUCCESSFULLY!" -ForegroundColor Green
-Write-Host "============================================================" -ForegroundColor Green
-Write-Host ""
-
-Write-Host "DATABASE CONFIGURATION:" -ForegroundColor Cyan
-Write-Host "  - Provider: MySQL"
+Write-Host "DATABASE CONFIGURATION:"
 Write-Host "  - Host: localhost"
 Write-Host "  - Port: 3306"
 Write-Host "  - Database: next_template_db"
 Write-Host "  - Username: root"
 Write-Host ""
-
-Write-Host "TEST USER CREDENTIALS:" -ForegroundColor Yellow
-Write-Host "  Use these to login at http://localhost:3000"
+Write-Host "TEST ACCOUNTS:"
+Write-Host "  - Admin:   username: admin   | password: password123"
+Write-Host "  - Manager: username: manager | password: password123"
+Write-Host "  - Analyst: username: analyst | password: password123"
 Write-Host ""
-Write-Host "  Role: ADMIN"
-Write-Host "    - Username: admin"
-Write-Host "    - Password: password123"
-Write-Host ""
-Write-Host "  Role: MANAGER"
-Write-Host "    - Username: manager"
-Write-Host "    - Password: password123"
-Write-Host ""
-Write-Host "  Role: ANALYST"
-Write-Host "    - Username: analyst"
-Write-Host "    - Password: password123"
-Write-Host ""
-
-Write-Host "USEFUL COMMANDS:" -ForegroundColor Cyan
-Write-Host "  - npm run dev           Start development server (http://localhost:3000)"
-Write-Host "  - npm run build         Build for production"
-Write-Host "  - npm run start         Run production build"
-Write-Host "  - npm run db:studio     Open Prisma Studio (http://localhost:5555)"
-Write-Host "  - npm run db:seed       Re-seed database"
-Write-Host "  - npm run db:reset      Reset database (WARNING: deletes all data)"
-Write-Host "  - npm run lint          Run linting"
+Write-Host "AVAILABLE COMMANDS:"
+Write-Host "  - npm run dev      - Start development server"
+Write-Host "  - npm run build    - Build for production"
+Write-Host "  - npm run db:studio - Open Prisma Studio (GUI database viewer)"
+Write-Host "  - npm run db:seed  - Reseed database"
+Write-Host "  - npm run db:reset - Reset database (WARNING: deletes all data)"
 Write-Host ""
 
 # ============================================================
-# STEP 15: PRISMA STUDIO OPTION
+# STEP 13: OFFER PRISMA STUDIO
 # ============================================================
 
 Write-Host ""
 Write-Step "Prisma Studio Option"
-Write-Host "Would you like to open Prisma Studio in a separate window?"
-Write-Host "(Prisma Studio is a visual database browser)"
+Write-Host "Would you like to open Prisma Studio in a new window?"
 Write-Host "  1. Yes - Open Prisma Studio"
 Write-Host "  2. No - Skip Prisma Studio"
 Write-Host ""
@@ -483,10 +412,10 @@ Write-Host ""
 $prismaChoice = Read-Host "Enter your choice (1 or 2)"
 
 if ($prismaChoice -eq "1") {
-    Write-Success "Opening Prisma Studio..."
+    Write-Success "Opening Prisma Studio in a new window..."
     Write-Host ""
-    Write-Info "Prisma Studio URL: http://localhost:5555"
-    Write-Info "It may take a few seconds to open in your browser"
+    Write-Info "Prisma Studio will open in your default browser at http://localhost:5555"
+    Write-Info "The browser window may take a few seconds to open"
     Write-Host ""
     
     Start-Sleep -Seconds 2
@@ -494,28 +423,27 @@ if ($prismaChoice -eq "1") {
     try {
         Start-Process powershell -ArgumentList "cd '$PWD'; npm run db:studio" -WindowStyle Normal
         Write-Success "Prisma Studio launched in new window!"
-        Write-Info "Development server will start now at http://localhost:3000..."
+        Write-Info "Starting development server on http://localhost:3000..."
     }
     catch {
-        Write-Warning "Could not open Prisma Studio"
-        Write-Info "You can open it manually later with: npm run db:studio"
+        Write-Warning "Could not open Prisma Studio in new window"
+        Write-Info "You can manually open it later with: npm run db:studio"
     }
     
     Write-Host ""
 }
 else {
     Write-Info "Skipping Prisma Studio"
-    Write-Info "You can open it anytime with: npm run db:studio"
+    Write-Info "You can open it later with: npm run db:studio"
     Write-Host ""
 }
 
 # ============================================================
-# STEP 16: START DEVELOPMENT SERVER
+# STEP 14: START DEVELOPMENT SERVER
 # ============================================================
 
 Write-Host ""
 Write-Step "Starting development server..."
-Write-Host ""
 Write-Info "The server will start on http://localhost:3000"
 Write-Info "Press Ctrl+C to stop the server"
 Write-Host ""
@@ -524,9 +452,6 @@ Start-Sleep -Seconds 2
 
 Write-Success "LAUNCHING NextJS Template App..."
 Write-Host ""
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host ""
 
 # Start the development server
 npm run dev
-
