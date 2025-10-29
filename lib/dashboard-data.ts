@@ -38,17 +38,6 @@ interface Lawyer extends BaseStaffMember {
   barNumber: string
 }
 
-interface MasterData {
-  id: string
-  title: string
-  description: string
-  category: string
-  fieldType: string
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-}
-
 interface User {
   id: string
   username: string
@@ -99,11 +88,6 @@ export interface DashboardData {
     range: string
     count: number
   }>
-  masterDataStats: {
-    total: number
-    active: number
-    byCategory: Record<string, number>
-  }
 }
 
 // Cache for raw data
@@ -112,7 +96,6 @@ let dataCache: {
   doctors: Doctor[]
   engineers: Engineer[]
   lawyers: Lawyer[]
-  masterData: MasterData[]
   users: User[]
   lastFetch: number
 } | null = null
@@ -126,12 +109,11 @@ async function fetchAllRawData(): Promise<typeof dataCache> {
   console.log('📊 Loading analytics data...')
   
   try {
-    const [teachersRes, doctorsRes, engineersRes, lawyersRes, masterDataRes, usersRes] = await Promise.all([
+    const [teachersRes, doctorsRes, engineersRes, lawyersRes, usersRes] = await Promise.all([
       fetch('/api/teachers?limit=10000', { credentials: 'include' }),
       fetch('/api/doctors?limit=10000', { credentials: 'include' }),
       fetch('/api/engineers?limit=10000', { credentials: 'include' }),
       fetch('/api/lawyers?limit=10000', { credentials: 'include' }),
-      fetch('/api/master-data?limit=10000', { credentials: 'include' }),
       fetch('/api/users?limit=10000', { credentials: 'include' })
     ])
 
@@ -141,7 +123,6 @@ async function fetchAllRawData(): Promise<typeof dataCache> {
       { name: 'doctors', res: doctorsRes, required: true },
       { name: 'engineers', res: engineersRes, required: true },
       { name: 'lawyers', res: lawyersRes, required: true },
-      { name: 'masterData', res: masterDataRes, required: true },
       { name: 'users', res: usersRes, required: false } // Users data is optional (requires Admin role)
     ]
 
@@ -161,12 +142,11 @@ async function fetchAllRawData(): Promise<typeof dataCache> {
     }
 
     // Parse successful responses
-    const [teachers, doctors, engineers, lawyers, masterData] = await Promise.all([
+    const [teachers, doctors, engineers, lawyers] = await Promise.all([
       teachersRes.json(),
       doctorsRes.json(),
       engineersRes.json(),
-      lawyersRes.json(),
-      masterDataRes.json()
+      lawyersRes.json()
     ])
 
     // Handle users data conditionally
@@ -184,7 +164,6 @@ async function fetchAllRawData(): Promise<typeof dataCache> {
       doctors: doctors.data || [],
       engineers: engineers.data || [],
       lawyers: lawyers.data || [],
-      masterData: masterData.data || [],
       users: users.data || [],
       lastFetch: Date.now()
     }
@@ -194,7 +173,6 @@ async function fetchAllRawData(): Promise<typeof dataCache> {
       doctors: result.doctors.length,
       engineers: result.engineers.length,
       lawyers: result.lawyers.length,
-      masterData: result.masterData.length,
       users: result.users.length
     })
 
@@ -273,7 +251,7 @@ export async function computeDashboardData(filters: DashboardFilters): Promise<D
 
   // Performance monitoring and warnings
   const totalRecords = rawData.teachers.length + rawData.doctors.length + 
-                      rawData.engineers.length + rawData.lawyers.length + rawData.masterData.length
+                      rawData.engineers.length + rawData.lawyers.length
   
   console.log(`📊 Processing ${totalRecords.toLocaleString()} total records`)
   
@@ -408,22 +386,6 @@ export async function computeDashboardData(filters: DashboardFilters): Promise<D
     ).length
   }))
 
-  // Compute master data statistics
-  const activeMasterData = rawData.masterData.filter(md => md.isActive)
-  
-  const byCategory: Record<string, number> = {}
-  
-  rawData.masterData.forEach(md => {
-    // Count by category (Basic, Advanced, Specialized)
-    byCategory[md.category] = (byCategory[md.category] || 0) + 1
-  })
-
-  const masterDataStats = {
-    total: rawData.masterData.length,
-    active: activeMasterData.length,
-    byCategory
-  }
-
   const result: DashboardData = {
     overview: {
       totalStaff,
@@ -436,8 +398,7 @@ export async function computeDashboardData(filters: DashboardFilters): Promise<D
     roleDistribution,
     departmentStats,
     monthlyTrends,
-    experienceDistribution,
-    masterDataStats
+    experienceDistribution
   }
 
   const endTime = performance.now()

@@ -90,16 +90,9 @@ export default function DashboardPage() {
       count: item.count
     }))
 
-    const masterDataCategoryData = Object.entries(data.masterDataStats.byCategory).map(([category, count]) => ({
-      name: category,
-      value: count,
-      color: category === 'Basic' ? '#3B82F6' : category === 'Advanced' ? '#8B5CF6' : '#10B981'
-    }))
-
     return {
       departmentChartData,
-      experienceChartData,
-      masterDataCategoryData
+      experienceChartData
     }
   }, [data])
 
@@ -271,16 +264,6 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Master Data Categories */}
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '700ms' }}>
-            <PieChart
-              title="Master Data Categories"
-              description="Distribution of form data by category"
-              data={chartData.masterDataCategoryData}
-              height={350}
-              innerRadius={40}
-            />
-          </div>
         </div>
 
 
@@ -335,20 +318,20 @@ export default function DashboardPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center space-x-2">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <BarChart3 className="h-5 w-5 text-white" />
+                  <TrendingUp className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg">Data Records</CardTitle>
-                  <CardDescription>Master data entries</CardDescription>
+                  <CardTitle className="text-lg">Staff Growth</CardTitle>
+                  <CardDescription>Total professionals</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-purple-600">
-                {data.masterDataStats.total}
+                {data.overview.totalStaff}
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                {data.masterDataStats.active} active records
+                Across all departments
               </p>
             </CardContent>
           </Card>

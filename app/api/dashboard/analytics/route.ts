@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
       doctorStats,
       engineerStats,
       lawyerStats,
-      masterDataStats,
       departmentGroups,
       monthlyTrends,
       experienceGroups,
@@ -105,14 +104,6 @@ export async function GET(request: NextRequest) {
         _avg: { salary: true, yearsOfExperience: true },
         _min: { salary: true },
         _max: { salary: true }
-      }),
-      // Master data aggregations
-      db.masterData.aggregate({
-        where: {
-          ...whereConditions,
-          ...(status !== null && { isActive: status === 'active' })
-        },
-        _count: { id: true }
       }),
       // Department distribution using individual queries (safer approach)
       Promise.all([
@@ -262,14 +253,6 @@ export async function GET(request: NextRequest) {
       { name: 'Lawyers', value: lawyerStats._count.id || 0, color: '#6366F1' }
     ]
 
-    // Master data analytics (simplified for performance)
-    const masterDataStatsProcessed = {
-      total: masterDataStats._count.id || 0,
-      active: Math.round((masterDataStats._count.id || 0) * 0.9), // Estimate 90% active
-      byCategory: {}, // Would need separate groupBy query for this
-      byFieldType: {} // Would need separate groupBy query for this
-    }
-
     return NextResponse.json({
       overview: {
         totalStaff,
@@ -283,7 +266,6 @@ export async function GET(request: NextRequest) {
       departmentStats: departmentStatsMap,
       monthlyTrends: monthlyData,
       experienceDistribution,
-      masterDataStats: masterDataStatsProcessed,
       filters: {
         dateRange,
         department,

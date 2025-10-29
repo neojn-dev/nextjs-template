@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   UserCog,
-  Database,
   GraduationCap,
   Briefcase,
   HardHat,
@@ -56,15 +55,6 @@ const allNavigationItems: NavigationItem[] = [
     activeIconBg: "bg-gradient-to-br from-indigo-500 to-purple-500 border-indigo-300 shadow-lg shadow-indigo-200/50",
     textColor: "text-indigo-700",
     roles: ["Admin"] // Only admin can access
-  },
-  {
-    title: "Master Data",
-    description: "Master data management",
-    href: "/master-data",
-    icon: Database,
-    activeColor: "from-green-500 to-emerald-500",
-    activeIconBg: "bg-gradient-to-br from-green-500 to-emerald-500 border-green-300 shadow-lg shadow-green-200/50",
-    textColor: "text-green-700"
   },
   {
     title: "Teachers",

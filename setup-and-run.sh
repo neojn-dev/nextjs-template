@@ -191,7 +191,7 @@ if [ "$MIGRATION_SUCCESS" = false ]; then
             
             # Check if there are broken migrations or missing tables
             if echo "$MIGRATION_STATUS" | grep -q "failed to apply\|Cannot drop table\|foreign key constraint" || \
-               npx prisma db execute --stdin <<< "SHOW TABLES LIKE 'MasterData';" 2>/dev/null | grep -q "MasterData"; then
+               false; then
                 
                 print_warning "Database may be in inconsistent state."
                 print_info "Attempting to fix by applying migrations with force resolve..."
