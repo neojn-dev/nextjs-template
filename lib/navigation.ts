@@ -10,7 +10,8 @@ import {
   GraduationCap,
   Briefcase,
   HardHat,
-  Scale
+  Scale,
+  Folder
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
@@ -35,6 +36,15 @@ const allNavigationItems: NavigationItem[] = [
     activeColor: "from-blue-500 to-cyan-500",
     activeIconBg: "bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-300 shadow-lg shadow-blue-200/50",
     textColor: "text-blue-700"
+  },
+  {
+    title: "File Manager",
+    description: "Documents & uploads",
+    href: "/files",
+    icon: Folder,
+    activeColor: "from-green-500 to-emerald-500",
+    activeIconBg: "bg-gradient-to-br from-green-500 to-emerald-500 border-green-300 shadow-lg shadow-green-200/50",
+    textColor: "text-green-700"
   },
   {
     title: "Users",
