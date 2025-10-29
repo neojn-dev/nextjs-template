@@ -121,14 +121,17 @@ export async function GET(request: NextRequest) {
     })
 
     
+    // Calculate pages - ensure at least 1 page even when total is 0
+    const pages = total === 0 ? 1 : Math.ceil(total / limit)
+    
     const response = {
       data: engineers,
       pagination: {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit),
-        hasNext: page < Math.ceil(total / limit),
+        pages,
+        hasNext: page < pages,
         hasPrev: page > 1
       },
       filters: {

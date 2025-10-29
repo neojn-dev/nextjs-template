@@ -143,24 +143,146 @@ export async function GET(request: NextRequest) {
           },
           _count: { id: true }
         })
-      ]).then(([teachers, doctors, engineers, lawyers]) => {
+      ]).then(async ([teachers, doctors, engineers, lawyers]) => {
         const combined: Array<{ department: string; role: string; total: number; active: number }> = []
-        teachers.forEach(t => combined.push({ department: t.department, role: 'Teacher', total: t._count.id, active: Math.round(t._count.id * 0.85) }))
-        doctors.forEach(d => combined.push({ department: d.department, role: 'Doctor', total: d._count.id, active: Math.round(d._count.id * 0.85) }))
-        engineers.forEach(e => combined.push({ department: e.department, role: 'Engineer', total: e._count.id, active: Math.round(e._count.id * 0.85) }))
-        lawyers.forEach(l => combined.push({ department: l.department, role: 'Lawyer', total: l._count.id, active: Math.round(l._count.id * 0.85) }))
+        
+        // Get actual active counts for each department
+        for (const t of teachers) {
+          const activeCount = await db.teacher.count({
+            where: {
+              department: t.department,
+              isActive: true,
+              ...whereConditions
+            }
+          })
+          combined.push({ department: t.department, role: 'Teacher', total: t._count.id, active: activeCount })
+        }
+        
+        for (const d of doctors) {
+          const activeCount = await db.doctor.count({
+            where: {
+              department: d.department,
+              isActive: true,
+              ...whereConditions
+            }
+          })
+          combined.push({ department: d.department, role: 'Doctor', total: d._count.id, active: activeCount })
+        }
+        
+        for (const e of engineers) {
+          const activeCount = await db.engineer.count({
+            where: {
+              department: e.department,
+              isActive: true,
+              ...whereConditions
+            }
+          })
+          combined.push({ department: e.department, role: 'Engineer', total: e._count.id, active: activeCount })
+        }
+        
+        for (const l of lawyers) {
+          const activeCount = await db.lawyer.count({
+            where: {
+              department: l.department,
+              isActive: true,
+              ...whereConditions
+            }
+          })
+          combined.push({ department: l.department, role: 'Lawyer', total: l._count.id, active: activeCount })
+        }
+        
         return combined
       }),
-      // Monthly trends using Prisma aggregations (safer approach)
-      Promise.resolve([]),
-      // Experience distribution using simple approach
-      Promise.resolve([
-        { range: '0-2 years', count: 0 },
-        { range: '3-5 years', count: 0 },
-        { range: '6-10 years', count: 0 },
-        { range: '11-15 years', count: 0 },
-        { range: '16+ years', count: 0 }
-      ]),
+      // Monthly trends - calculate from actual data
+      (async () => {
+        const now = new Date()
+        const trends: Array<{ month: string; role: string; count: number }> = []
+        
+        for (let i = 5; i >= 0; i--) {
+          const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1)
+          const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1)
+          const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0)
+          const monthStr = format(monthDate, 'yyyy-MM')
+          
+          const [teachers, doctors, engineers, lawyers] = await Promise.all([
+            db.teacher.count({
+              where: {
+                createdAt: { gte: monthStart, lte: monthEnd },
+                ...(department && { department: { contains: department } }),
+                ...(status !== null && { isActive: status === 'active' })
+              }
+            }),
+            db.doctor.count({
+              where: {
+                createdAt: { gte: monthStart, lte: monthEnd },
+                ...(department && { department: { contains: department } }),
+                ...(status !== null && { isActive: status === 'active' })
+              }
+            }),
+            db.engineer.count({
+              where: {
+                createdAt: { gte: monthStart, lte: monthEnd },
+                ...(department && { department: { contains: department } }),
+                ...(status !== null && { isActive: status === 'active' })
+              }
+            }),
+            db.lawyer.count({
+              where: {
+                createdAt: { gte: monthStart, lte: monthEnd },
+                ...(department && { department: { contains: department } }),
+                ...(status !== null && { isActive: status === 'active' })
+              }
+            })
+          ])
+          
+          trends.push(
+            { month: monthStr, role: 'Teacher', count: teachers },
+            { month: monthStr, role: 'Doctor', count: doctors },
+            { month: monthStr, role: 'Engineer', count: engineers },
+            { month: monthStr, role: 'Lawyer', count: lawyers }
+          )
+        }
+        
+        return trends
+      })(),
+      // Experience distribution - calculate from actual data
+      (async () => {
+        const experienceRanges = [
+          { range: '0-2 years', min: 0, max: 2 },
+          { range: '3-5 years', min: 3, max: 5 },
+          { range: '6-10 years', min: 6, max: 10 },
+          { range: '11-15 years', min: 11, max: 15 },
+          { range: '16+ years', min: 16, max: Infinity }
+        ]
+        
+        const distribution = []
+        
+        for (const expRange of experienceRanges) {
+          const baseWhere = {
+            ...whereConditions,
+            ...(department && { department: { contains: department } }),
+            ...(status !== null && { isActive: status === 'active' }),
+            yearsOfExperience: {
+              gte: expRange.min,
+              ...(expRange.max !== Infinity && { lte: expRange.max })
+            }
+          }
+          
+          const [teachers, doctors, engineers, lawyers] = await Promise.all([
+            db.teacher.count({ where: baseWhere }),
+            db.doctor.count({ where: baseWhere }),
+            db.engineer.count({ where: baseWhere }),
+            db.lawyer.count({ where: baseWhere })
+          ])
+          
+          distribution.push({
+            experience_range: expRange.range,
+            count: teachers + doctors + engineers + lawyers
+          })
+        }
+        
+        return distribution
+      })(),
       // Salary statistics will be calculated from individual aggregations
       Promise.resolve([])
     ])
@@ -169,9 +291,39 @@ export async function GET(request: NextRequest) {
     const totalStaff = (teacherStats._count.id || 0) + (doctorStats._count.id || 0) + 
                       (engineerStats._count.id || 0) + (lawyerStats._count.id || 0)
     
-    // Calculate active staff from aggregated counts (assuming most are active for now)
-    // In a real scenario, you'd need separate aggregations for active vs inactive
-    const activeStaff = Math.round(totalStaff * 0.85) // Estimate 85% active
+    // Calculate actual active staff count
+    const [activeTeachers, activeDoctors, activeEngineers, activeLawyers] = await Promise.all([
+      db.teacher.count({
+        where: {
+          ...whereConditions,
+          isActive: true,
+          ...(department && { department: { contains: department } })
+        }
+      }),
+      db.doctor.count({
+        where: {
+          ...whereConditions,
+          isActive: true,
+          ...(department && { department: { contains: department } })
+        }
+      }),
+      db.engineer.count({
+        where: {
+          ...whereConditions,
+          isActive: true,
+          ...(department && { department: { contains: department } })
+        }
+      }),
+      db.lawyer.count({
+        where: {
+          ...whereConditions,
+          isActive: true,
+          ...(department && { department: { contains: department } })
+        }
+      })
+    ])
+    
+    const activeStaff = activeTeachers + activeDoctors + activeEngineers + activeLawyers
 
     // Calculate salary statistics from individual aggregations
     const salaries = [
@@ -181,19 +333,22 @@ export async function GET(request: NextRequest) {
       lawyerStats._avg.salary ? Number(lawyerStats._avg.salary) : null
     ].filter(Boolean) as number[]
     
-    const avgSalary = salaries.length > 0 ? salaries.reduce((a, b) => a + b, 0) / salaries.length : 50000
-    const minSalary = Math.min(
-      teacherStats._min.salary ? Number(teacherStats._min.salary) : 50000,
-      doctorStats._min.salary ? Number(doctorStats._min.salary) : 50000,
-      engineerStats._min.salary ? Number(engineerStats._min.salary) : 50000,
-      lawyerStats._min.salary ? Number(lawyerStats._min.salary) : 50000
-    )
-    const maxSalary = Math.max(
-      teacherStats._max.salary ? Number(teacherStats._max.salary) : 100000,
-      doctorStats._max.salary ? Number(doctorStats._max.salary) : 100000,
-      engineerStats._max.salary ? Number(engineerStats._max.salary) : 100000,
-      lawyerStats._max.salary ? Number(lawyerStats._max.salary) : 100000
-    )
+    const avgSalary = salaries.length > 0 ? salaries.reduce((a, b) => a + b, 0) / salaries.length : 0
+    const minSalaryArray = [
+      teacherStats._min.salary ? Number(teacherStats._min.salary) : null,
+      doctorStats._min.salary ? Number(doctorStats._min.salary) : null,
+      engineerStats._min.salary ? Number(engineerStats._min.salary) : null,
+      lawyerStats._min.salary ? Number(lawyerStats._min.salary) : null
+    ].filter((s): s is number => s !== null)
+    const minSalary = minSalaryArray.length > 0 ? Math.min(...minSalaryArray) : 0
+    
+    const maxSalaryArray = [
+      teacherStats._max.salary ? Number(teacherStats._max.salary) : null,
+      doctorStats._max.salary ? Number(doctorStats._max.salary) : null,
+      engineerStats._max.salary ? Number(engineerStats._max.salary) : null,
+      lawyerStats._max.salary ? Number(lawyerStats._max.salary) : null
+    ].filter((s): s is number => s !== null)
+    const maxSalary = maxSalaryArray.length > 0 ? Math.max(...maxSalaryArray) : 0
 
     // Process department distribution from raw query results
     const departmentStatsMap: Record<string, { total: number; active: number; roles: Record<string, number> }> = {}

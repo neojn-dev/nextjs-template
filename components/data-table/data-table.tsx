@@ -133,7 +133,7 @@ export function DataTable<TData, TValue>({
       },
     },
     manualPagination: !!pagination, // Enable server-side pagination when pagination prop is provided
-    pageCount: pagination ? Math.ceil(pagination.total / (pagination.pageSize || 10)) : -1,
+    pageCount: pagination ? (pagination.total === 0 ? 1 : Math.ceil(pagination.total / (pagination.pageSize || 10))) : -1,
     state: {
       sorting,
       columnFilters,
@@ -245,9 +245,16 @@ export function DataTable<TData, TValue>({
   // Helper function to safely get current page count
   const getCurrentPageCount = () => {
     try {
-      if (pagination?.pageCount !== undefined) {
+      // If pagination is provided from server, use it directly
+      if (pagination?.pageCount !== undefined && pagination.pageCount > 0) {
         return pagination.pageCount
       }
+      // Calculate from total and pageSize if available
+      if (pagination?.total !== undefined && pagination?.pageSize !== undefined) {
+        // Ensure at least 1 page even when total is 0
+        return pagination.total === 0 ? 1 : Math.ceil(pagination.total / pagination.pageSize)
+      }
+      // Fallback to table's page count
       if (tableReady) {
         const pageCount = table.getPageCount()
         if (pageCount !== undefined && pageCount > 0) {
