@@ -1,5 +1,3 @@
-import { WebsiteHeader, WebsiteFooter } from "@/components/website-components"
-
 export const metadata = {
   title: 'Authentication - Next.js Template',
   description: 'Sign in, sign up, and manage your account',
@@ -12,11 +10,9 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col">
-      <WebsiteHeader />
       <main className="flex-1 pt-20 lg:pt-24 pb-8">
         {children}
       </main>
-      <WebsiteFooter />
     </div>
   )
 }

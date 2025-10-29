@@ -1,152 +1,135 @@
+/**
+ * Navigation configuration for the authenticated app
+ * Provides navigation items filtered by user role
+ */
+
 import { 
-  BarChart3,
-  Users, 
-  Stethoscope,
-  Wrench,
-  Scale,
-  Layers,
+  LayoutDashboard,
+  Users,
   UserCog,
-  Shield,
-  Settings
+  Database,
+  GraduationCap,
+  Briefcase,
+  HardHat,
+  Scale
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
 export interface NavigationItem {
   title: string
+  description: string
   href: string
   icon: LucideIcon
-  description: string
-  color?: string
-  activeColor?: string
-  iconBg?: string
-  activeIconBg?: string
-  textColor?: string
-  hoverBg?: string
+  activeColor: string
+  activeIconBg: string
+  textColor: string
+  roles?: string[] // If undefined, accessible to all roles
 }
 
-export const navigationItems: NavigationItem[] = [
+// Define all available navigation items
+const allNavigationItems: NavigationItem[] = [
   {
     title: "Dashboard",
+    description: "Overview & analytics",
     href: "/dashboard",
-    icon: BarChart3,
-    description: "Overview and analytics",
-    color: "from-blue-100 to-blue-200",
-    activeColor: "from-blue-200 to-blue-300",
-    iconBg: "bg-blue-50",
-    activeIconBg: "bg-blue-100",
-    textColor: "text-blue-700",
-    hoverBg: "hover:bg-blue-50/80"
-  },
-  {
-    title: "Teachers",
-    href: "/teachers",
-    icon: Users,
-    description: "Manage teacher records",
-    color: "from-emerald-100 to-emerald-200",
-    activeColor: "from-emerald-200 to-emerald-300",
-    iconBg: "bg-emerald-50",
-    activeIconBg: "bg-emerald-100",
-    textColor: "text-emerald-700",
-    hoverBg: "hover:bg-emerald-50/80"
-  },
-  {
-    title: "Doctors",
-    href: "/doctors",
-    icon: Stethoscope,
-    description: "Manage doctor records",
-    color: "from-rose-100 to-rose-200",
-    activeColor: "from-rose-200 to-rose-300",
-    iconBg: "bg-rose-50",
-    activeIconBg: "bg-rose-100",
-    textColor: "text-rose-700",
-    hoverBg: "hover:bg-rose-50/80"
-  },
-  {
-    title: "Engineers",
-    href: "/engineers",
-    icon: Wrench,
-    description: "Manage engineer records",
-    color: "from-amber-100 to-amber-200",
-    activeColor: "from-amber-200 to-amber-300",
-    iconBg: "bg-amber-50",
-    activeIconBg: "bg-amber-100",
-    textColor: "text-amber-700",
-    hoverBg: "hover:bg-amber-50/80"
-  },
-  {
-    title: "Lawyers",
-    href: "/lawyers",
-    icon: Scale,
-    description: "Manage lawyer records",
-    color: "from-purple-100 to-purple-200",
-    activeColor: "from-purple-200 to-purple-300",
-    iconBg: "bg-purple-50",
-    activeIconBg: "bg-purple-100",
-    textColor: "text-purple-700",
-    hoverBg: "hover:bg-purple-50/80"
-  },
-  {
-    title: "Master Data",
-    href: "/master-data",
-    icon: Layers,
-    description: "Comprehensive form data management",
-    color: "from-slate-100 to-slate-200",
-    activeColor: "from-slate-200 to-slate-300",
-    iconBg: "bg-slate-50",
-    activeIconBg: "bg-slate-100",
-    textColor: "text-slate-700",
-    hoverBg: "hover:bg-slate-50/80"
+    icon: LayoutDashboard,
+    activeColor: "from-blue-500 to-cyan-500",
+    activeIconBg: "bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-300 shadow-lg shadow-blue-200/50",
+    textColor: "text-blue-700"
   },
   {
     title: "Users",
+    description: "User management",
     href: "/users",
-    icon: UserCog,
-    description: "Manage system users",
-    color: "from-cyan-100 to-cyan-200",
-    activeColor: "from-cyan-200 to-cyan-300",
-    iconBg: "bg-cyan-50",
-    activeIconBg: "bg-cyan-100",
-    textColor: "text-cyan-700",
-    hoverBg: "hover:bg-cyan-50/80"
+    icon: Users,
+    activeColor: "from-purple-500 to-pink-500",
+    activeIconBg: "bg-gradient-to-br from-purple-500 to-pink-500 border-purple-300 shadow-lg shadow-purple-200/50",
+    textColor: "text-purple-700",
+    roles: ["Admin"] // Only admin can access
   },
   {
     title: "Roles",
+    description: "Role management",
     href: "/roles",
-    icon: Shield,
-    description: "Manage user roles and permissions",
-    color: "from-orange-100 to-orange-200",
-    activeColor: "from-orange-200 to-orange-300",
-    iconBg: "bg-orange-50",
-    activeIconBg: "bg-orange-100",
-    textColor: "text-orange-700",
-    hoverBg: "hover:bg-orange-50/80"
+    icon: UserCog,
+    activeColor: "from-indigo-500 to-purple-500",
+    activeIconBg: "bg-gradient-to-br from-indigo-500 to-purple-500 border-indigo-300 shadow-lg shadow-indigo-200/50",
+    textColor: "text-indigo-700",
+    roles: ["Admin"] // Only admin can access
   },
   {
-    title: "CMS Admin",
-    href: "/cms",
-    icon: Settings,
-    description: "Content Management System",
-    color: "from-indigo-100 to-indigo-200",
-    activeColor: "from-indigo-200 to-indigo-300",
-    iconBg: "bg-indigo-50",
-    activeIconBg: "bg-indigo-100",
-    textColor: "text-indigo-700",
-    hoverBg: "hover:bg-indigo-50/80"
+    title: "Master Data",
+    description: "Master data management",
+    href: "/master-data",
+    icon: Database,
+    activeColor: "from-green-500 to-emerald-500",
+    activeIconBg: "bg-gradient-to-br from-green-500 to-emerald-500 border-green-300 shadow-lg shadow-green-200/50",
+    textColor: "text-green-700"
+  },
+  {
+    title: "Teachers",
+    description: "Teacher records",
+    href: "/teachers",
+    icon: GraduationCap,
+    activeColor: "from-orange-500 to-red-500",
+    activeIconBg: "bg-gradient-to-br from-orange-500 to-red-500 border-orange-300 shadow-lg shadow-orange-200/50",
+    textColor: "text-orange-700"
+  },
+  {
+    title: "Doctors",
+    description: "Doctor records",
+    href: "/doctors",
+    icon: Briefcase,
+    activeColor: "from-teal-500 to-cyan-500",
+    activeIconBg: "bg-gradient-to-br from-teal-500 to-cyan-500 border-teal-300 shadow-lg shadow-teal-200/50",
+    textColor: "text-teal-700"
+  },
+  {
+    title: "Engineers",
+    description: "Engineer records",
+    href: "/engineers",
+    icon: HardHat,
+    activeColor: "from-amber-500 to-yellow-500",
+    activeIconBg: "bg-gradient-to-br from-amber-500 to-yellow-500 border-amber-300 shadow-lg shadow-amber-200/50",
+    textColor: "text-amber-700"
+  },
+  {
+    title: "Lawyers",
+    description: "Lawyer records",
+    href: "/lawyers",
+    icon: Scale,
+    activeColor: "from-violet-500 to-purple-500",
+    activeIconBg: "bg-gradient-to-br from-violet-500 to-purple-500 border-violet-300 shadow-lg shadow-violet-200/50",
+    textColor: "text-violet-700"
   }
 ]
 
 /**
- * Filter navigation items based on user role
- * @param userRole - The current user's role
- * @returns Filtered navigation items
+ * Get filtered navigation items based on user role
+ * @param userRole - The user's role (e.g., "Admin", "Manager", "User")
+ * @returns Array of navigation items filtered by role
  */
 export function getFilteredNavigationItems(userRole?: string): NavigationItem[] {
-  return navigationItems.filter(item => {
-    // Only show Users, Roles, and CMS to Admin users
-    if (item.href === '/users' || item.href === '/roles' || item.href === '/cms') {
-      return userRole === 'Admin'
+  if (!userRole) {
+    // If no role, return items that don't require specific roles
+    return allNavigationItems.filter(item => !item.roles || item.roles.length === 0)
+  }
+
+  // Filter items based on role
+  // Items without roles array are accessible to everyone
+  // Items with roles array are only accessible to specified roles
+  return allNavigationItems.filter(item => {
+    if (!item.roles || item.roles.length === 0) {
+      return true // Accessible to all
     }
-    // Show all other items to everyone
-    return true
+    return item.roles.includes(userRole)
   })
 }
+
+/**
+ * Get all navigation items (for admin/debug purposes)
+ */
+export function getAllNavigationItems(): NavigationItem[] {
+  return allNavigationItems
+}
+

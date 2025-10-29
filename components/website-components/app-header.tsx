@@ -36,13 +36,6 @@ export function AppHeader() {
               <span className="text-sm text-gray-500">Loading...</span>
             ) : session?.user ? (
               <>
-                {/* Admin Panel Link */}
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/cms" className="flex items-center space-x-2">
-                    <Settings className="h-4 w-4" />
-                    <span>Admin Panel</span>
-                  </Link>
-                </Button>
 
                 {/* User Name */}
                 <span className="text-sm font-medium text-gray-700">

@@ -38,45 +38,27 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  username      String    @unique
-  email         String    @unique
-  passwordHash  String
-  firstName     String?
-  lastName      String?
-  roleId        String?
-  emailVerified DateTime?
-  isActive      Boolean   @default(true)
-  mustChangePassword Boolean @default(false)
-  createdByAdmin Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  role Role? @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  accounts Account[]
-  sessions Session[]
-  uploads  Upload[]
-  verificationTokens VerificationToken[]
+  id                 String    @id @default(cuid())
+  username           String    @unique
+  email              String    @unique
+  passwordHash       String
+  firstName          String?
+  lastName           String?
+  roleId             String?
+  emailVerified      DateTime?
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  createdByAdmin     Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  role                Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  accounts            Account[]
+  sessions            Session[]
+  uploads             Upload[]
+  verificationTokens  VerificationToken[]
   passwordResetTokens PasswordResetToken[]
-  
-  // CMS Relations
-  pagesCreated      CmsPage[]     @relation("PageCreatedBy")
-  pagesUpdated      CmsPage[]     @relation("PageUpdatedBy")
-  templatesCreated  CmsTemplate[] @relation("TemplateCreatedBy")
-  templatesUpdated  CmsTemplate[] @relation("TemplateUpdatedBy")
-  blocksCreated     CmsBlock[]    @relation("BlockCreatedBy")
-  blocksUpdated     CmsBlock[]    @relation("BlockUpdatedBy")
-  mediaUploaded     CmsMedia[]    @relation("MediaUploadedBy")
-  seoSettingsUpdated CmsSeoSettings[] @relation("SeoUpdatedBy")
-  navigationCreated CmsNavigation[] @relation("NavigationCreatedBy")
-  navigationUpdated CmsNavigation[] @relation("NavigationUpdatedBy")
-  siteSettingsUpdated CmsSiteSettings[] @relation("SiteSettingsUpdatedBy")
-  
-  // Content Relations
-  blogPosts         BlogPost[]
-  announcements     Announcement[]
-  tenders           Tender[]
-  
+
   @@index([roleId])
   @@index([isActive])
   @@index([email])
@@ -86,13 +68,13 @@ model Role {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  permissions String?  // JSON string for permissions
+  permissions String? // JSON string for permissions
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   users User[]
-  
+
   @@index([isActive])
   @@index([name])
 }
@@ -103,7 +85,7 @@ model VerificationToken {
   userId    String
   expires   DateTime
   createdAt DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -113,7 +95,7 @@ model PasswordResetToken {
   userId    String
   expires   DateTime
   createdAt DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -126,29 +108,29 @@ model Upload {
   path         String
   userId       String
   createdAt    DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Teacher {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Essential fields only (10 total)
-  firstName       String
-  lastName        String
-  email           String   @unique
-  employeeId      String   @unique
-  department      String
-  subject         String
+  firstName         String
+  lastName          String
+  email             String    @unique
+  employeeId        String    @unique
+  department        String
+  subject           String
   yearsOfExperience Int?
-  salary          Decimal? @db.Decimal(10, 2)
-  hireDate        DateTime?
-  isActive        Boolean  @default(true)
-  
+  salary            Decimal?  @db.Decimal(10, 2)
+  hireDate          DateTime?
+  isActive          Boolean   @default(true)
+
   // No user relations - global data
-  
+
   // Indexes for 5M+ records performance
   @@index([isActive])
   @@index([createdAt])
@@ -159,24 +141,24 @@ model Teacher {
 }
 
 model Doctor {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Essential fields only (10 total)
-  firstName       String
-  lastName        String
-  email           String   @unique
-  employeeId      String   @unique
-  department      String
-  specialization  String
-  licenseNumber   String   @unique
+  firstName         String
+  lastName          String
+  email             String   @unique
+  employeeId        String   @unique
+  department        String
+  specialization    String
+  licenseNumber     String   @unique
   yearsOfExperience Int?
-  salary          Decimal? @db.Decimal(10, 2)
-  isActive        Boolean  @default(true)
-  
+  salary            Decimal? @db.Decimal(10, 2)
+  isActive          Boolean  @default(true)
+
   // No user relations - global data
-  
+
   // Indexes for 5M+ records performance
   @@index([isActive])
   @@index([createdAt])
@@ -188,24 +170,24 @@ model Doctor {
 }
 
 model Engineer {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Essential fields only (10 total)
-  firstName       String
-  lastName        String
-  email           String   @unique
-  employeeId      String   @unique
-  department      String
-  specialization  String
-  engineeringType String
+  firstName         String
+  lastName          String
+  email             String   @unique
+  employeeId        String   @unique
+  department        String
+  specialization    String
+  engineeringType   String
   yearsOfExperience Int?
-  salary          Decimal? @db.Decimal(10, 2)
-  isActive        Boolean  @default(true)
-  
+  salary            Decimal? @db.Decimal(10, 2)
+  isActive          Boolean  @default(true)
+
   // No user relations - global data
-  
+
   // Indexes for 5M+ records performance
   @@index([isActive])
   @@index([createdAt])
@@ -218,24 +200,24 @@ model Engineer {
 }
 
 model Lawyer {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Essential fields only (10 total)
-  firstName       String
-  lastName        String
-  email           String   @unique
-  employeeId      String   @unique
-  department      String
-  practiceArea    String
-  barNumber       String   @unique
+  firstName         String
+  lastName          String
+  email             String   @unique
+  employeeId        String   @unique
+  department        String
+  practiceArea      String
+  barNumber         String   @unique
   yearsOfExperience Int?
-  salary          Decimal? @db.Decimal(10, 2)
-  isActive        Boolean  @default(true)
-  
+  salary            Decimal? @db.Decimal(10, 2)
+  isActive          Boolean  @default(true)
+
   // No user relations - global data
-  
+
   // Indexes for 5M+ records performance
   @@index([isActive])
   @@index([createdAt])
@@ -246,624 +228,60 @@ model Lawyer {
   @@index([email])
 }
 
-
-
 model MasterData {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Basic Information
-  title           String   @db.VarChar(200)
-  description     String?  @db.Text
-  category        String   @db.VarChar(100) // Basic, Advanced, Specialized
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  
+  title       String  @db.VarChar(200)
+  description String? @db.Text
+  category    String  @db.VarChar(100) // Basic, Advanced, Specialized
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
   // Text Fields
-  textField       String?  @db.VarChar(255)
-  emailField      String?  @db.VarChar(255)
-  phoneField      String?  @db.VarChar(20)
-  urlField        String?  @db.VarChar(500)
-  searchField     String?  @db.VarChar(255)
-  textareaField   String?  @db.Text
-  richTextField   String?  @db.LongText
-  
+  textField     String? @db.VarChar(255)
+  emailField    String? @db.VarChar(255)
+  phoneField    String? @db.VarChar(20)
+  urlField      String? @db.VarChar(500)
+  searchField   String? @db.VarChar(255)
+  textareaField String? @db.Text
+  richTextField String? @db.LongText
+
   // Numeric Fields
-  numberField     Decimal? @db.Decimal(10, 2)
-  integerField    Int?
-  rangeField      Int?     // 0-100
-  sliderValue     Float?   @db.Float
-  
+  numberField  Decimal? @db.Decimal(10, 2)
+  integerField Int?
+  rangeField   Int? // 0-100
+  sliderValue  Float?   @db.Float
+
   // Date & Time Fields
-  dateField       DateTime?
-  timeField       String?  @db.VarChar(10) // HH:MM format
-  dateTimeField   DateTime?
-  monthField      String?  @db.VarChar(7)  // YYYY-MM format
-  weekField       String?  @db.VarChar(10) // YYYY-WNN format
-  
+  dateField     DateTime?
+  timeField     String?   @db.VarChar(10) // HH:MM format
+  dateTimeField DateTime?
+  monthField    String?   @db.VarChar(7) // YYYY-MM format
+  weekField     String?   @db.VarChar(10) // YYYY-WNN format
+
   // Selection Fields
-  singleSelect    String?  @db.VarChar(100)
-  multiSelect     String?  // JSON array
-  radioSelection  String?  @db.VarChar(100)
-  checkboxGroup   String?  // JSON array
-  
+  singleSelect   String? @db.VarChar(100)
+  multiSelect    String? // JSON array
+  radioSelection String? @db.VarChar(100)
+  checkboxGroup  String? // JSON array
+
   // Boolean Fields
-  switchField     Boolean  @default(false)
-  checkboxField   Boolean  @default(false)
-  
+  switchField   Boolean @default(false)
+  checkboxField Boolean @default(false)
+
   // Special Fields
-  colorField      String?  @db.VarChar(7)  // Hex color
-  ratingField     Float?   @db.Float        // 0-5 rating
-  tagsField       String?  // JSON array
-  
+  colorField  String? @db.VarChar(7) // Hex color
+  ratingField Float?  @db.Float // 0-5 rating
+  tagsField   String? // JSON array
+
   // Field Configuration
-  fieldType       String   @db.VarChar(50)  // input, select, textarea, etc.
-  
+  fieldType String @db.VarChar(50) // input, select, textarea, etc.
+
   // No user relations - global data
-  
+
   @@index([category, isActive])
   @@index([sortOrder])
 }
-
-// ================================
-// CMS MODELS - Content Management System
-// ================================
-
-model CmsPage {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Basic Page Information
-  title           String   @db.VarChar(200)
-  slug            String   @unique @db.VarChar(200)
-  description     String?  @db.Text
-  content         String?  @db.LongText // JSON content structure
-  
-  // Page Configuration
-  templateId      String?
-  isPublished     Boolean  @default(false)
-  publishedAt     DateTime?
-  isDraft         Boolean  @default(true)
-  
-  // SEO Fields
-  metaTitle       String?  @db.VarChar(60)
-  metaDescription String?  @db.VarChar(160)
-  metaKeywords    String?  @db.VarChar(255)
-  ogTitle         String?  @db.VarChar(60)
-  ogDescription   String?  @db.VarChar(160)
-  ogImage         String?  @db.VarChar(500)
-  
-  // Page Settings
-  layout          String?  @db.VarChar(50) // public, app, custom
-  parentId        String?  // For hierarchical pages
-  sortOrder       Int      @default(0)
-  isHomepage      Boolean  @default(false)
-  
-  // Relationships
-  template        CmsTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  parent          CmsPage?     @relation("PageHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children        CmsPage[]    @relation("PageHierarchy")
-  blocks          CmsPageBlock[]
-  navigationItems CmsNavigation[]
-  siteSettings    CmsSiteSettings[]
-  
-  // User tracking
-  createdBy       String
-  updatedBy       String
-  createdByUser   User     @relation("PageCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser   User     @relation("PageUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([slug])
-  @@index([isPublished])
-  @@index([templateId])
-  @@index([parentId])
-  @@index([createdAt])
-}
-
-model CmsTemplate {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Template Information
-  name            String   @db.VarChar(100)
-  description     String?  @db.Text
-  category        String   @db.VarChar(50) // business, government, blog, etc.
-  
-  // Template Configuration
-  structure       String   @db.LongText // JSON structure definition
-  previewImage    String?  @db.VarChar(500)
-  isActive        Boolean  @default(true)
-  isSystem        Boolean  @default(false) // System templates can't be deleted
-  
-  // Template Settings
-  layout          String   @db.VarChar(50) // public, app, custom
-  defaultBlocks   String?  @db.LongText // JSON array of default blocks
-  
-  // Relationships
-  pages           CmsPage[]
-  
-  // User tracking
-  createdBy       String
-  updatedBy       String
-  createdByUser   User     @relation("TemplateCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser   User     @relation("TemplateUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([category])
-  @@index([isActive])
-  @@index([createdAt])
-}
-
-model CmsBlock {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Block Information
-  name            String   @db.VarChar(100)
-  type            String   @db.VarChar(50) // hero, features, testimonials, etc.
-  category        String   @db.VarChar(50) // layout, content, media, etc.
-  description     String?  @db.Text
-  
-  // Block Configuration
-  component       String   @db.VarChar(100) // React component name
-  props           String?  @db.LongText // JSON props structure
-  defaultContent  String?  @db.LongText // JSON default content
-  
-  // Block Settings
-  isReusable      Boolean  @default(true)
-  isSystem        Boolean  @default(false)
-  previewImage    String?  @db.VarChar(500)
-  
-  // Relationships
-  pageBlocks      CmsPageBlock[]
-  
-  // User tracking
-  createdBy       String
-  updatedBy       String
-  createdByUser   User     @relation("BlockCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser   User     @relation("BlockUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([type])
-  @@index([category])
-  @@index([isReusable])
-  @@index([createdAt])
-}
-
-model CmsPageBlock {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relationship IDs
-  pageId          String
-  blockId         String
-  
-  // Block Instance Configuration
-  content         String?  @db.LongText // JSON content for this instance
-  settings        String?  @db.LongText // JSON settings for this instance
-  sortOrder       Int      @default(0)
-  
-  // Block Position
-  section         String?  @db.VarChar(50) // header, main, footer, sidebar
-  
-  // Relationships
-  page            CmsPage  @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  block           CmsBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  
-  @@index([pageId])
-  @@index([blockId])
-  @@index([sortOrder])
-  @@unique([pageId, blockId, section])
-}
-
-model CmsMedia {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // File Information
-  filename        String   @db.VarChar(255)
-  originalName    String   @db.VarChar(255)
-  mimeType        String   @db.VarChar(100)
-  size            Int
-  path            String   @db.VarChar(500)
-  url             String   @db.VarChar(500)
-  
-  // Media Metadata
-  title           String?  @db.VarChar(200)
-  altText         String?  @db.VarChar(255)
-  caption         String?  @db.Text
-  description     String?  @db.Text
-  
-  // Image Specific
-  width           Int?
-  height          Int?
-  
-  // Organization
-  folder          String?  @db.VarChar(100)
-  tags            String?  @db.Text // JSON array
-  
-  // User tracking
-  uploadedBy      String
-  uploadedByUser  User     @relation("MediaUploadedBy", fields: [uploadedBy], references: [id])
-  
-  @@index([mimeType])
-  @@index([folder])
-  @@index([createdAt])
-}
-
-model CmsSeoSettings {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Site-wide SEO Settings
-  siteName        String?  @db.VarChar(100)
-  siteDescription String?  @db.VarChar(160)
-  defaultOgImage  String?  @db.VarChar(500)
-  
-  // Analytics
-  googleAnalyticsId String? @db.VarChar(50)
-  googleTagManagerId String? @db.VarChar(50)
-  facebookPixelId   String? @db.VarChar(50)
-  
-  // Social Media
-  twitterHandle   String?  @db.VarChar(50)
-  facebookUrl     String?  @db.VarChar(200)
-  linkedinUrl     String?  @db.VarChar(200)
-  instagramUrl    String?  @db.VarChar(200)
-  
-  // Technical SEO
-  robotsTxt       String?  @db.Text
-  customHead      String?  @db.Text // Custom HTML for <head>
-  
-  // User tracking
-  updatedBy       String
-  updatedByUser   User     @relation("SeoUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([updatedAt])
-}
-
-model CmsNavigation {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Navigation Item Info
-  label           String   @db.VarChar(100)
-  href            String   @db.VarChar(500)
-  target          String?  @db.VarChar(20) // _blank, _self, etc.
-  
-  // Navigation Structure
-  parentId        String?
-  sortOrder       Int      @default(0)
-  isActive        Boolean  @default(true)
-  
-  // Navigation Type
-  type            String   @db.VarChar(50) // page, external, dropdown
-  pageId          String?  // Link to CMS page
-  
-  // Styling
-  icon            String?  @db.VarChar(100)
-  cssClass        String?  @db.VarChar(200)
-  
-  // Relationships
-  parent          CmsNavigation? @relation("NavigationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children        CmsNavigation[] @relation("NavigationHierarchy")
-  page            CmsPage?       @relation(fields: [pageId], references: [id], onDelete: SetNull)
-  
-  // User tracking
-  createdBy       String
-  updatedBy       String
-  createdByUser   User     @relation("NavigationCreatedBy", fields: [createdBy], references: [id])
-  updatedByUser   User     @relation("NavigationUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([parentId])
-  @@index([sortOrder])
-  @@index([isActive])
-}
-
-model CmsSiteSettings {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Homepage Settings
-  homepageId      String?  // Which page to use as homepage
-  
-  // Header Settings
-  siteLogo        String?  @db.VarChar(500)
-  siteLogoAlt     String?  @db.VarChar(200)
-  headerStyle     String?  @db.VarChar(50) // minimal, full, custom
-  showSearch      Boolean  @default(false)
-  
-  // Footer Settings
-  footerText      String?  @db.Text
-  copyrightText   String?  @db.VarChar(200)
-  showSocialLinks Boolean  @default(true)
-  
-  // Contact Info
-  contactEmail    String?  @db.VarChar(200)
-  contactPhone    String?  @db.VarChar(50)
-  contactAddress  String?  @db.Text
-  
-  // Relationships
-  homepage        CmsPage? @relation(fields: [homepageId], references: [id], onDelete: SetNull)
-  
-  // User tracking
-  updatedBy       String
-  updatedByUser   User     @relation("SiteSettingsUpdatedBy", fields: [updatedBy], references: [id])
-  
-  @@index([updatedAt])
-}
-
-// ================================
-// ENHANCED CMS CONTENT - Blogs, Announcements, Tenders with WYSIWYG
-// ================================
-
-model BlogPost {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Basic Information
-  title       String   @db.VarChar(200)
-  slug        String   @unique @db.VarChar(200)
-  excerpt     String?  @db.VarChar(500)
-  content     String?  @db.LongText // WYSIWYG HTML content
-  
-  // Visual & Layout
-  coverImage  String?  @db.VarChar(500)
-  headerImage String?  @db.VarChar(500)
-  layout      String   @default("default") @db.VarChar(50) // default, featured, sidebar, full-width
-  
-  // Publishing
-  status      String   @default("draft") @db.VarChar(20) // draft, published, archived
-  publishedAt DateTime?
-  featured    Boolean  @default(false)
-  
-  // SEO & Meta
-  metaTitle       String?  @db.VarChar(60)
-  metaDescription String?  @db.VarChar(160)
-  metaKeywords    String?  @db.Text // JSON array
-  canonicalUrl    String?  @db.VarChar(500)
-  
-  // Social Media
-  ogTitle       String?  @db.VarChar(100)
-  ogDescription String?  @db.VarChar(200)
-  ogImage       String?  @db.VarChar(500)
-  twitterCard   String?  @db.VarChar(20) // summary, summary_large_image
-  
-  // Content Organization
-  category      String?  @db.VarChar(100)
-  tags          String?  // JSON array
-  readingTime   Int?     // Estimated reading time in minutes
-  
-  // Author & Attribution
-  authorId      String?
-  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  
-  // Attachments & Media
-  attachments   BlogAttachment[]
-  
-  // Analytics & Performance
-  viewCount     Int      @default(0)
-  lastViewedAt  DateTime?
-  
-  // Scheduling
-  scheduledAt   DateTime?
-  
-  // User tracking
-  createdBy     String?
-  updatedBy     String?
-
-  @@index([status, publishedAt])
-  @@index([createdAt])
-  @@index([category])
-  @@index([featured])
-  @@index([slug])
-}
-
-model BlogAttachment {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-
-  blogId      String
-  filename    String   @db.VarChar(255)
-  originalName String  @db.VarChar(255)
-  mimeType    String   @db.VarChar(100)
-  size         Int
-  url          String   @db.VarChar(500)
-  altText      String?  @db.VarChar(255)
-  caption      String?  @db.Text
-  
-  // File metadata
-  width       Int?
-  height      Int?
-  duration    Int?     // For video/audio files in seconds
-
-  blog        BlogPost @relation(fields: [blogId], references: [id], onDelete: Cascade)
-
-  @@index([blogId])
-  @@index([mimeType])
-}
-
-model Announcement {
-  id          String   @id @default(cuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Basic Information
-  title       String   @db.VarChar(200)
-  slug        String?  @unique @db.VarChar(200)
-  excerpt     String?  @db.VarChar(500)
-  body        String?  @db.LongText // WYSIWYG HTML content
-  
-  // Visual & Layout
-  headerImage String?  @db.VarChar(500)
-  layout      String   @default("default") @db.VarChar(50) // default, featured, alert, banner
-  
-  // Publishing & Timing
-  status      String   @default("draft") @db.VarChar(20) // draft, published, archived
-  publishedAt DateTime?
-  startAt     DateTime?
-  endAt       DateTime?
-  isActive    Boolean  @default(true)
-  featured    Boolean  @default(false)
-  
-  // SEO & Meta
-  metaTitle       String?  @db.VarChar(60)
-  metaDescription String?  @db.VarChar(160)
-  metaKeywords    String?  @db.Text // JSON array
-  
-  // Social Media
-  ogTitle       String?  @db.VarChar(100)
-  ogDescription String?  @db.VarChar(200)
-  ogImage       String?  @db.VarChar(500)
-  
-  // Content Organization
-  category      String?  @db.VarChar(100) // general, news, update, alert, event
-  priority      String   @default("normal") @db.VarChar(20) // low, normal, high, urgent
-  tags          String?  // JSON array
-  
-  // Author & Attribution
-  authorId      String?
-  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  
-  // Attachments & Media
-  attachments  AnnouncementAttachment[]
-  
-  // Analytics
-  viewCount    Int      @default(0)
-  lastViewedAt DateTime?
-  
-  // User tracking
-  createdBy    String?
-  updatedBy    String?
-
-  @@index([isActive])
-  @@index([startAt])
-  @@index([status, publishedAt])
-  @@index([priority])
-  @@index([category])
-}
-
-model AnnouncementAttachment {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-
-  announcementId String
-  filename       String   @db.VarChar(255)
-  originalName   String   @db.VarChar(255)
-  mimeType       String   @db.VarChar(100)
-  size           Int
-  url            String   @db.VarChar(500)
-  altText        String?  @db.VarChar(255)
-  caption        String?  @db.Text
-  
-  // File metadata
-  width          Int?
-  height         Int?
-  duration       Int?     // For video/audio files in seconds
-
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-
-  @@index([announcementId])
-  @@index([mimeType])
-}
-
-model Tender {
-  id           String   @id @default(cuid())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Basic Information
-  title        String   @db.VarChar(200)
-  slug         String?  @unique @db.VarChar(200)
-  excerpt      String?  @db.VarChar(500)
-  description  String?  @db.LongText // WYSIWYG HTML content
-  
-  // Visual & Layout
-  headerImage  String?  @db.VarChar(500)
-  layout       String   @default("default") @db.VarChar(50) // default, featured, urgent, standard
-  
-  // Tender Specific
-  referenceNo  String?  @db.VarChar(100)
-  tenderType   String?  @db.VarChar(100) // supply, service, construction, consultancy
-  estimatedValue String? @db.VarChar(100) // Estimated contract value
-  currency     String?  @db.VarChar(10)  // USD, EUR, etc.
-  
-  // Publishing & Timing
-  status       String   @default("draft") @db.VarChar(20) // draft, published, closed, awarded, cancelled
-  publishedAt  DateTime?
-  closingAt    DateTime?
-  isActive     Boolean  @default(true)
-  featured     Boolean  @default(false)
-  
-  // SEO & Meta
-  metaTitle       String?  @db.VarChar(60)
-  metaDescription String?  @db.VarChar(160)
-  metaKeywords    String?  @db.Text // JSON array
-  
-  // Social Media
-  ogTitle       String?  @db.VarChar(100)
-  ogDescription String?  @db.VarChar(200)
-  ogImage       String?  @db.VarChar(500)
-  
-  // Content Organization
-  category      String?  @db.VarChar(100) // government, private, international
-  sector        String?  @db.VarChar(100) // healthcare, education, infrastructure, etc.
-  tags          String?  // JSON array
-  
-  // Author & Attribution
-  authorId      String?
-  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  
-  // Attachments & Media
-  attachments  TenderAttachment[]
-  
-  // Analytics
-  viewCount    Int      @default(0)
-  lastViewedAt DateTime?
-  
-  // User tracking
-  createdBy    String?
-  updatedBy    String?
-
-  @@index([isActive])
-  @@index([publishedAt])
-  @@index([closingAt])
-  @@index([status])
-  @@index([tenderType])
-  @@index([category])
-  @@index([sector])
-}
-
-model TenderAttachment {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  tenderId  String
-  filename  String   @db.VarChar(255)
-  originalName String @db.VarChar(255)
-  mimeType  String   @db.VarChar(100)
-  size      Int
-  url       String   @db.VarChar(500)
-  altText   String?  @db.VarChar(255)
-  caption   String?  @db.Text
-  
-  // File metadata
-  width     Int?
-  height    Int?
-  duration  Int?     // For video/audio files in seconds
-
-  tender    Tender   @relation(fields: [tenderId], references: [id], onDelete: Cascade)
-
-  @@index([tenderId])
-  @@index([mimeType])
-}
-
-

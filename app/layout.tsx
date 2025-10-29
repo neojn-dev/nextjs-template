@@ -1,22 +1,15 @@
 /**
- * ROOT LAYOUT - CMS-Driven Public Website Layout
+ * ROOT LAYOUT - Application Root Layout
  * 
- * This layout provides the structure for the CMS-driven public website.
- * It dynamically loads:
- * - Navigation structure from CMS
- * - Site settings (logo, branding, etc.)
- * - SEO configuration
- * - Footer content and social links
+ * This is the root layout for the NextJS application.
+ * Provides the basic HTML structure and session provider.
  * 
- * Used by: Public website pages (/, /about, /services, etc.)
- * Note: Auth and admin routes have their own layouts
+ * Note: Auth and app routes have their own layouts
  */
 
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { WebsiteHeader, WebsiteFooter } from "@/components/website-components"
 import { SessionProviderWrapper } from "@/components/providers/session-provider"
-import { headers } from 'next/headers'
 import "@/styles/globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -54,38 +47,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const headersList = await headers()
-  const isCmsRoute = headersList.get('x-is-cms-route') === 'true'
-
-  if (isCmsRoute) {
-    // CMS routes get minimal layout
-    return (
-      <html lang="en">
-        <body className={inter.className} suppressHydrationWarning>
-          <SessionProviderWrapper>
-            {children}
-          </SessionProviderWrapper>
-        </body>
-      </html>
-    )
-  }
-
   return (
     <html lang="en">
       <body className={inter.className} suppressHydrationWarning>
         <SessionProviderWrapper>
-          <div className="min-h-screen flex flex-col">
-            <WebsiteHeader />
-            <main className="flex-1 pt-16 lg:pt-20">
-              {children}
-            </main>
-            <WebsiteFooter />
-          </div>
+          {children}
         </SessionProviderWrapper>
       </body>
     </html>

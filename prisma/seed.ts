@@ -7,19 +7,34 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seed...')
 
-  // Clear existing data
-  await prisma.masterData.deleteMany()
-  await prisma.upload.deleteMany()
-  await prisma.lawyer.deleteMany()
-  await prisma.engineer.deleteMany()
-  await prisma.doctor.deleteMany()
-  await prisma.teacher.deleteMany()
-  await prisma.session.deleteMany()
-  await prisma.account.deleteMany()
-  await prisma.verificationToken.deleteMany()
-  await prisma.passwordResetToken.deleteMany()
-  await prisma.user.deleteMany()
-  await prisma.role.deleteMany()
+  // Clear existing data (with error handling for missing tables)
+  try {
+    await prisma.masterData.deleteMany()
+  } catch (error: any) {
+    if (error.code !== 'P2021') { // P2021 is "table does not exist"
+      throw error
+    }
+    console.log('⚠️  MasterData table does not exist, skipping cleanup')
+  }
+
+  try {
+    await prisma.upload.deleteMany()
+    await prisma.lawyer.deleteMany()
+    await prisma.engineer.deleteMany()
+    await prisma.doctor.deleteMany()
+    await prisma.teacher.deleteMany()
+    await prisma.session.deleteMany()
+    await prisma.account.deleteMany()
+    await prisma.verificationToken.deleteMany()
+    await prisma.passwordResetToken.deleteMany()
+    await prisma.user.deleteMany()
+    await prisma.role.deleteMany()
+  } catch (error: any) {
+    if (error.code !== 'P2021') {
+      throw error
+    }
+    console.log('⚠️  Some tables do not exist yet, continuing with seed...')
+  }
 
   // Create default roles first
   const adminRole = await prisma.role.create({
@@ -528,11 +543,19 @@ async function main() {
     masterDataEntries.push(masterData)
   }
 
-  const createdMasterData = await prisma.masterData.createMany({
-    data: masterDataEntries,
-  })
-
-  console.log(`✅ Created ${createdMasterData.count} Master Data records`)
+  try {
+    const createdMasterData = await prisma.masterData.createMany({
+      data: masterDataEntries,
+    })
+    console.log(`✅ Created ${createdMasterData.count} Master Data records`)
+  } catch (error: any) {
+    if (error.code === 'P2021') {
+      console.log('⚠️  MasterData table does not exist. Make sure migrations are applied.')
+      console.log('   Run: npx prisma migrate deploy')
+      throw new Error('MasterData table not found. Please run migrations first.')
+    }
+    throw error
+  }
 
   console.log('🎉 Database seeded successfully!')
   console.log('\n📊 Summary:')

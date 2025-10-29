@@ -327,26 +327,127 @@ catch {
 Write-Host ""
 
 # ============================================================
-# STEP 10: RUN DATABASE MIGRATIONS
+# STEP 10: CHECK AND RUN DATABASE MIGRATIONS
 # ============================================================
 
-Write-Step "Running database migrations..."
+Write-Step "Checking migration status..."
+
+$migrationSuccess = $false
+$maxRetries = 3
+$retryCount = 0
 
 try {
-    npm run db:migrate
-    Write-Success "Database migrations completed!"
+    $migrationStatus = npx prisma migrate status 2>&1 | Out-String
+    
+    if ($migrationStatus -match "Database schema is up to date") {
+        Write-Success "Database is already up to date!"
+        $migrationSuccess = $true
+    }
+    elseif ($migrationStatus -match "migration.*have not yet been applied" -or $migrationStatus -match "following migration") {
+        Write-Info "Pending migrations found. Applying migrations..."
+        $retryCount = 0
+    }
+    elseif ($migrationStatus -match "failed to apply|migration.*failed|Migration.*failed|Cannot drop table|foreign key constraint") {
+        Write-Warning "Migration errors detected. Attempting to resolve..."
+        $retryCount = 1  # Start with retry logic
+    }
+    else {
+        Write-Info "Migration status unclear. Attempting to apply migrations..."
+        $retryCount = 0
+    }
 }
 catch {
-    Write-Warning "npm script failed, trying alternative method..."
+    Write-Warning "Could not check migration status, proceeding with migration..."
+    $retryCount = 0
+}
+
+# Attempt migrations with auto-recovery
+while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
+    $retryCount++
+    Write-Info "Migration attempt $retryCount/$maxRetries..."
     
     try {
-        npx prisma migrate deploy
-        Write-Success "Database migrations completed!"
+        if ($retryCount -eq 1) {
+            # First attempt: deploy mode
+            Write-Info "Running migrations (deploy mode)..."
+            npx prisma migrate deploy 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Database migrations completed!"
+                $migrationSuccess = $true
+                break
+            }
+        }
+        elseif ($retryCount -eq 2) {
+            # Second attempt: Check for failed migrations and resolve
+            Write-Warning "Migration issues detected. Attempting to resolve..."
+            
+            # Try to resolve failed migrations
+            $failedMatch = $migrationStatus | Select-String -Pattern "migration\s+(\S+)\s+failed" -AllMatches
+            if ($failedMatch -and $failedMatch.Matches.Count -gt 0) {
+                $failedMigration = $failedMatch.Matches[0].Groups[1].Value
+                Write-Info "Resolving failed migration: $failedMigration"
+                echo "y" | npx prisma migrate resolve --rolled-back "$failedMigration" 2>&1 | Out-Null
+            }
+            
+            # Try deploy again
+            Write-Info "Retrying migrations after resolution..."
+            npx prisma migrate deploy 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Database migrations completed after resolution!"
+                $migrationSuccess = $true
+                break
+            }
+            
+            # Try dev mode
+            Write-Info "Trying migrate dev mode..."
+            npx prisma migrate dev --name auto_fix 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Database migrations completed!"
+                $migrationSuccess = $true
+                break
+            }
+        }
+        elseif ($retryCount -eq 3) {
+            # Final attempt: Reset and rebuild
+            Write-Warning "All migration attempts failed. Attempting automatic database reset..."
+            Write-Info "WARNING: This will delete all existing data!"
+            
+            try {
+                # Reset database
+                echo "y" | npx prisma migrate reset --force --skip-seed 2>&1 | Out-Null
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Success "Database reset successful!"
+                    Write-Info "Applying fresh migrations..."
+                    
+                    npx prisma migrate deploy 2>&1 | Out-Null
+                    if ($LASTEXITCODE -ne 0) {
+                        npx prisma migrate dev --name init 2>&1 | Out-Null
+                    }
+                    
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Success "Database migrations completed after reset!"
+                        $migrationSuccess = $true
+                        break
+                    }
+                }
+            }
+            catch {
+                Write-Error "Database reset failed"
+            }
+        }
     }
     catch {
-        Write-Error "Failed to run database migrations"
-        exit 1
+        Write-Warning "Migration attempt $retryCount failed: $_"
+        if ($retryCount -lt $maxRetries) {
+            Start-Sleep -Seconds 2
+        }
     }
+}
+
+if (-not $migrationSuccess) {
+    Write-Error "Failed to complete database migrations after all attempts"
+    Write-Info "You may need to manually run: npx prisma migrate reset"
+    exit 1
 }
 
 Write-Host ""
@@ -363,23 +464,40 @@ $seedSuccess = $false
 
 while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
     try {
-        npm run db:seed
-        Write-Success "Database seeded successfully!"
-        Write-Info "Sample data includes:"
-        Write-Info "  - 3 test users: admin, manager, analyst"
-        Write-Info "  - 50 sample MyData records"
-        Write-Info "  - Sample file uploads"
-        $seedSuccess = $true
+        npm run db:seed 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Success "Database seeded successfully!"
+            Write-Info "Sample data includes:"
+            Write-Info "  - 3 roles (Admin, Manager, User)"
+            Write-Info "  - 10 test users (admin, manager, analyst, etc.)"
+            Write-Info "  - 100 Teachers, Doctors, Engineers, Lawyers"
+            Write-Info "  - 100 Master Data records"
+            $seedSuccess = $true
+        }
+        else {
+            throw "Seed command returned non-zero exit code"
+        }
     }
     catch {
         $seedRetries++
         if ($seedRetries -lt $seedMaxRetries) {
-            Write-Warning "Database seeding failed (Attempt $seedRetries/$seedMaxRetries). Retrying..."
+            Write-Warning "Database seeding failed (Attempt $seedRetries/$seedMaxRetries)"
+            Write-Info "Regenerating Prisma client and retrying..."
+            try {
+                npx prisma generate 2>&1 | Out-Null
+            }
+            catch {
+                # Ignore generate errors
+            }
             Start-Sleep -Seconds 2
+            Write-Info "Retrying seed..."
         }
         else {
-            Write-Warning "Failed to seed database after $seedMaxRetries attempts"
-            Write-Warning "You can seed manually later with: npm run db:seed"
+            Write-Warning "Database seeding failed after $seedMaxRetries attempts"
+            Write-Info "This is usually okay - tables might not exist yet or data already exists"
+            Write-Info "You can manually seed later with: npm run db:seed"
+            # Don't exit - seeding is not critical for app startup
+            $seedSuccess = $true  # Continue anyway
         }
     }
 }
@@ -434,28 +552,60 @@ Write-Host "SETUP COMPLETED SUCCESSFULLY!" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 
-Write-Host "DATABASE CONFIGURATION:" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "📋 LOGIN CREDENTIALS" -ForegroundColor Cyan
+Write-Host "   Use these to sign in at http://localhost:3000/signin" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host ""
+
+Write-Host "  🔑 ADMIN ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: admin"
+Write-Host "     Password: password123"
+Write-Host "     Email:    admin@example.com"
+Write-Host "     Role:     Admin"
+Write-Host ""
+
+Write-Host "  👥 MANAGER ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: manager"
+Write-Host "     Password: password123"
+Write-Host "     Email:    manager@example.com"
+Write-Host "     Role:     Manager"
+Write-Host ""
+
+Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
+Write-Host "     Username: analyst"
+Write-Host "     Password: password123"
+Write-Host "     Email:    analyst@example.com"
+Write-Host "     Role:     User"
+Write-Host ""
+
+Write-Host "     Username: jdoe"
+Write-Host "     Password: password123"
+Write-Host "     Email:    john.doe@example.com"
+Write-Host "     Role:     User"
+Write-Host ""
+
+Write-Host "     Username: asmith"
+Write-Host "     Password: password123"
+Write-Host "     Email:    alice.smith@example.com"
+Write-Host "     Role:     User"
+Write-Host ""
+
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "🔗 Quick Links" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Cyan
+Write-Host "  • Application:     http://localhost:3000"
+Write-Host "  • Sign In:        http://localhost:3000/signin"
+Write-Host "  • Dashboard:      http://localhost:3000/dashboard"
+Write-Host "  • Prisma Studio:  http://localhost:5555"
+Write-Host ""
+
+Write-Host "DATABASE CONFIGURATION:" -ForegroundColor Magenta
 Write-Host "  - Provider: MySQL"
 Write-Host "  - Host: localhost"
 Write-Host "  - Port: 3306"
 Write-Host "  - Database: next_template_db"
 Write-Host "  - Username: root"
-Write-Host ""
-
-Write-Host "TEST USER CREDENTIALS:" -ForegroundColor Yellow
-Write-Host "  Use these to login at http://localhost:3000"
-Write-Host ""
-Write-Host "  Role: ADMIN"
-Write-Host "    - Username: admin"
-Write-Host "    - Password: password123"
-Write-Host ""
-Write-Host "  Role: MANAGER"
-Write-Host "    - Username: manager"
-Write-Host "    - Password: password123"
-Write-Host ""
-Write-Host "  Role: ANALYST"
-Write-Host "    - Username: analyst"
-Write-Host "    - Password: password123"
 Write-Host ""
 
 Write-Host "USEFUL COMMANDS:" -ForegroundColor Cyan
@@ -469,64 +619,214 @@ Write-Host "  - npm run lint          Run linting"
 Write-Host ""
 
 # ============================================================
-# STEP 15: PRISMA STUDIO OPTION
+# STEP 15: FINAL CREDENTIALS DISPLAY (BEFORE STARTING SERVERS)
 # ============================================================
 
 Write-Host ""
-Write-Step "Prisma Studio Option"
-Write-Host "Would you like to open Prisma Studio in a separate window?"
-Write-Host "(Prisma Studio is a visual database browser)"
-Write-Host "  1. Yes - Open Prisma Studio"
-Write-Host "  2. No - Skip Prisma Studio"
+Write-Host "============================================================" -ForegroundColor Magenta
+Write-Host "📋 LOGIN CREDENTIALS - Copy these for easy access" -ForegroundColor Magenta
+Write-Host "============================================================" -ForegroundColor Magenta
 Write-Host ""
 
-$prismaChoice = Read-Host "Enter your choice (1 or 2)"
+Write-Host "  🔑 ADMIN ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: admin"
+Write-Host "     Password: password123"
+Write-Host "     Email:    admin@example.com"
+Write-Host ""
 
-if ($prismaChoice -eq "1") {
-    Write-Success "Opening Prisma Studio..."
-    Write-Host ""
-    Write-Info "Prisma Studio URL: http://localhost:5555"
-    Write-Info "It may take a few seconds to open in your browser"
-    Write-Host ""
-    
-    Start-Sleep -Seconds 2
-    
-    try {
-        Start-Process powershell -ArgumentList "cd '$PWD'; npm run db:studio" -WindowStyle Normal
-        Write-Success "Prisma Studio launched in new window!"
-        Write-Info "Development server will start now at http://localhost:3000..."
-    }
-    catch {
-        Write-Warning "Could not open Prisma Studio"
-        Write-Info "You can open it manually later with: npm run db:studio"
-    }
-    
-    Write-Host ""
-}
-else {
-    Write-Info "Skipping Prisma Studio"
-    Write-Info "You can open it anytime with: npm run db:studio"
-    Write-Host ""
-}
+Write-Host "  👥 MANAGER ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: manager"
+Write-Host "     Password: password123"
+Write-Host "     Email:    manager@example.com"
+Write-Host ""
+
+Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
+Write-Host "     Username: analyst"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "     Username: jdoe"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "     Username: asmith"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "  💡 Tip: All passwords are: password123" -ForegroundColor Cyan
+Write-Host "  🔗 Sign in at: http://localhost:3000/signin" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "============================================================" -ForegroundColor Magenta
+Write-Host ""
 
 # ============================================================
-# STEP 16: START DEVELOPMENT SERVER
+# STEP 16: START PRISMA STUDIO
+# ============================================================
+
+Write-Host ""
+Write-Step "Starting Prisma Studio..."
+Write-Info "Prisma Studio will be available at http://localhost:5555"
+
+# Start Prisma Studio in background
+$prismaJob = Start-Job -ScriptBlock {
+    Set-Location $using:PWD
+    npx prisma studio --browser none
+}
+
+Start-Sleep -Seconds 4
+
+Write-Success "Prisma Studio started! (Job ID: $($prismaJob.Id))"
+Write-Info "Prisma Studio will open in browser when Next.js is ready..."
+
+Write-Host ""
+
+# ============================================================
+# STEP 16: FINAL CREDENTIALS REMINDER
+# ============================================================
+
+Write-Host ""
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host "📋 LOGIN CREDENTIALS - Ready to use!" -ForegroundColor Magenta
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "  🔑 ADMIN:     admin / password123" -ForegroundColor Yellow
+Write-Host "  👥 MANAGER:   manager / password123" -ForegroundColor Yellow
+Write-Host "  👤 USERS:     analyst, jdoe, asmith / password123" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  🔗 Sign in: http://localhost:3000/signin" -ForegroundColor Cyan
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host ""
+
+# ============================================================
+# STEP 17: START DEVELOPMENT SERVER
 # ============================================================
 
 Write-Host ""
 Write-Step "Starting development server..."
-Write-Host ""
 Write-Info "The server will start on http://localhost:3000"
-Write-Info "Press Ctrl+C to stop the server"
+Write-Info "Press Ctrl+C to stop both servers"
 Write-Host ""
 
 Start-Sleep -Seconds 2
 
 Write-Success "LAUNCHING NextJS Template App..."
 Write-Host ""
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host ""
 
-# Start the development server
-npm run dev
+# Start Next.js dev server in background to check if it starts
+Write-Info "Starting Next.js server..."
+$nextjsJob = Start-Job -ScriptBlock {
+    Set-Location $using:PWD
+    npm run dev 2>&1
+}
+
+# Wait for Next.js to start
+Write-Info "Waiting for Next.js server to start..."
+Start-Sleep -Seconds 8
+
+# Check if server is responding
+try {
+    $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+    if ($response.StatusCode -eq 200) {
+        Write-Success "Next.js server is running!"
+        
+        # Open both applications in browser
+        Write-Info "Opening both applications in browser..."
+        try {
+            # Open Prisma Studio
+            Start-Process "http://localhost:5555"
+            Start-Sleep -Milliseconds 500
+            # Open Next.js app
+            Start-Process "http://localhost:3000"
+            Write-Success "Both applications opened in browser!"
+            Write-Info "  • Next.js App: http://localhost:3000"
+            Write-Info "  • Prisma Studio: http://localhost:5555"
+        }
+        catch {
+            Write-Warning "Could not auto-open browser"
+            Write-Info "Please visit manually:"
+            Write-Info "  • Next.js App: http://localhost:3000"
+            Write-Info "  • Prisma Studio: http://localhost:5555"
+        }
+        
+        Write-Host ""
+        Write-Host "============================================================" -ForegroundColor Magenta
+        Write-Host "  ✅ Both servers are running:" -ForegroundColor Green
+        Write-Host "  📊 Prisma Studio: http://localhost:5555" -ForegroundColor Cyan
+        Write-Host "  🌐 Next.js App:    http://localhost:3000" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+        Write-Host "============================================================" -ForegroundColor Magenta
+        Write-Host ""
+        
+        # Handle cleanup on Ctrl+C
+        try {
+            # Show Next.js logs in foreground
+            while ($true) {
+                $jobOutput = Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
+                if ($jobOutput) {
+                    Write-Host $jobOutput
+                }
+                if ($nextjsJob.State -eq "Completed" -or $nextjsJob.State -eq "Failed") {
+                    break
+                }
+                Start-Sleep -Seconds 1
+            }
+        }
+        catch {
+            Write-Host "`nStopping servers..." -ForegroundColor Yellow
+        }
+        finally {
+            Write-Host "`nCleaning up..." -ForegroundColor Yellow
+            Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+            Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+        }
+    }
+    else {
+        throw "Server not ready"
+    }
+}
+catch {
+    Write-Warning "Next.js server may still be starting..."
+    Write-Info "Waiting a bit longer..."
+    Start-Sleep -Seconds 5
+    
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
+        if ($response.StatusCode -eq 200) {
+            # Open both applications in browser
+            try {
+                Start-Process "http://localhost:5555"
+                Start-Sleep -Milliseconds 500
+                Start-Process "http://localhost:3000"
+                Write-Success "Both applications opened in browser!"
+                Write-Info "  • Next.js App: http://localhost:3000"
+                Write-Info "  • Prisma Studio: http://localhost:5555"
+            }
+            catch {
+                Write-Warning "Could not auto-open browser"
+                Write-Info "Please visit manually:"
+                Write-Info "  • Next.js App: http://localhost:3000"
+                Write-Info "  • Prisma Studio: http://localhost:5555"
+            }
+            Write-Host ""
+            Write-Host "============================================================" -ForegroundColor Magenta
+            Write-Host "  ✅ Both servers are running:" -ForegroundColor Green
+            Write-Host "  📊 Prisma Studio: http://localhost:5555" -ForegroundColor Cyan
+            Write-Host "  🌐 Next.js App:    http://localhost:3000" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+            Write-Host "============================================================" -ForegroundColor Magenta
+            Write-Host ""
+            Receive-Job -Job $nextjsJob -Wait
+        }
+    }
+    catch {
+        Write-Error "Next.js server failed to start properly"
+        Write-Info "Showing server logs:"
+        Receive-Job -Job $nextjsJob
+        Stop-Job -Job $nextjsJob, $prismaJob
+        Remove-Job -Job $nextjsJob, $prismaJob
+        exit 1
+    }
+}
 

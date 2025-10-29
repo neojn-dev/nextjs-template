@@ -12,7 +12,7 @@ import {
   Globe,
   X
 } from "lucide-react"
-import { getFilteredNavigationItems } from "@/lib/navigation"
+import { getFilteredNavigationItems, type NavigationItem } from "@/lib/navigation"
 
 interface MobileMenuProps {
   isOpen: boolean

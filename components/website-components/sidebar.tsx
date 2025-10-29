@@ -12,7 +12,7 @@ import {
   Building2
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getFilteredNavigationItems } from "@/lib/navigation"
+import { getFilteredNavigationItems, type NavigationItem } from "@/lib/navigation"
 
 interface SidebarProps {
   isCollapsed?: boolean
