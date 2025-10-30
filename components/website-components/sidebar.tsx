@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { 
   ChevronLeft, 
   ChevronRight,
+  ChevronDown,
   Building2
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -33,6 +34,11 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    user: true,
+    city: true,
+    analytics: true
+  })
 
   // Get filtered navigation items based on user role
   const filteredNavigationItems = getFilteredNavigationItems(session?.user?.role)
@@ -94,79 +100,156 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
 
         {/* Navigation - Perfect spacing */}
         <nav className="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
-          {filteredNavigationItems.map((item, index) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            return (
-              <motion.div
-                key={item.href}
-                initial="hidden"
-                animate="visible"
-                variants={itemVariants}
-                transition={{ duration: 0.3, delay: index * 0.08 }}
-              >
-                <Link href={item.href}>
-                  <motion.div
-                    className={cn(
-                      "group relative flex items-center rounded-2xl transition-all duration-300 cursor-pointer",
-                      isCollapsed ? "p-2 justify-center" : "px-4 py-3",
-                      isActive 
-                        ? `bg-gradient-to-r ${item.activeColor} border border-white/60 shadow-lg shadow-gray-200/50` 
-                        : "bg-gray-50 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200/30"
-                    )}
-                    onMouseEnter={() => setHoveredItem(item.href)}
-                    onMouseLeave={() => setHoveredItem(null)}
-                    whileHover={{ scale: 1.02, y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-
-                    {/* Icon container - perfect aspect ratio */}
-                    <div className={cn(
-                      "relative flex items-center justify-center rounded-xl transition-all duration-300 flex-shrink-0",
-                      isCollapsed ? "w-7 h-7" : "w-9 h-9",
-                      isActive 
-                        ? item.activeIconBg 
-                        : "bg-white border border-gray-200 group-hover:scale-110 group-hover:border-gray-300"
-                    )}>
-                      <Icon className={cn(
-                        "transition-all duration-300",
-                        isCollapsed ? "h-4 w-4" : "h-4 w-4",
-                        isActive ? item.textColor : "text-gray-600 group-hover:text-gray-700"
-                      )} />
-                    </div>
-
-                    {/* Text with perfect spacing */}
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          transition={{ duration: 0.25, ease: "easeOut" }}
-                          className="ml-4 flex-1"
-                        >
-                          <span className={cn(
-                            "font-semibold text-sm transition-all duration-300 tracking-wide",
-                            isActive ? item.textColor : "text-gray-600 group-hover:text-gray-700"
-                          )}>
-                            {item.title}
-                          </span>
-                        </motion.div>
+          {isCollapsed ? (
+            // Collapsed: keep flat icon list for clarity
+            filteredNavigationItems.map((item, index) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <motion.div
+                  key={item.href}
+                  initial="hidden"
+                  animate="visible"
+                  variants={itemVariants}
+                  transition={{ duration: 0.3, delay: index * 0.08 }}
+                >
+                  <Link href={item.href}>
+                    <motion.div
+                      className={cn(
+                        "group relative flex items-center rounded-lg transition-colors duration-200 cursor-pointer",
+                        "h-10 px-0 justify-center",
+                        isActive 
+                          ? "bg-gray-900 text-white"
+                          : "bg-white hover:bg-gray-100 text-gray-700"
                       )}
-                    </AnimatePresence>
-
-                    {/* Tooltip for collapsed state - hypermodern */}
-                    {isCollapsed && (
-                      <div className="absolute left-full ml-3 px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 border border-gray-200 shadow-lg shadow-gray-200/50">
+                      onMouseEnter={() => setHoveredItem(item.href)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      whileHover={{ scale: 1.015, y: -1 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className={cn(
+                        "flex items-center justify-center flex-shrink-0",
+                        "w-7 h-7"
+                      )}>
+                        <Icon className={cn(
+                          "transition-colors duration-200",
+                          "h-5 w-5",
+                          isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
+                        )} />
+                      </div>
+                      <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-white text-gray-700 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md border border-gray-200">
                         {item.title}
                         <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-white"></div>
                       </div>
-                    )}
-                  </motion.div>
-                </Link>
-              </motion.div>
-            )
-          })}
+                    </motion.div>
+                  </Link>
+                </motion.div>
+              )
+            })
+          ) : (
+            // Expanded: show grouped, collapsible sections
+            (() => {
+              const groups: { key: string; title: string; items: NavigationItem[] }[] = [
+                {
+                  key: "user",
+                  title: "User Management",
+                  items: filteredNavigationItems.filter(i => ["/users", "/roles"].includes(i.href))
+                },
+                {
+                  key: "city",
+                  title: "City Data",
+                  items: filteredNavigationItems.filter(i => ["/doctors", "/engineers", "/teachers", "/lawyers"].includes(i.href))
+                },
+                {
+                  key: "analytics",
+                  title: "Analytics",
+                  items: filteredNavigationItems.filter(i => ["/dashboard", "/files"].includes(i.href))
+                }
+              ]
+
+              return groups
+                .filter(group => group.items.length > 0)
+                .map((group, gIndex) => (
+                  <div key={group.key} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setOpenGroups(prev => ({ ...prev, [group.key]: !prev[group.key] }))}
+                      className="w-full h-10 flex items-center justify-between px-3 text-xs font-semibold tracking-wide text-gray-700 uppercase rounded-lg bg-white border border-gray-200 hover:bg-gray-100 transition-colors"
+                    >
+                      <span>{group.title}</span>
+                      <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", openGroups[group.key] ? "rotate-0" : "-rotate-90")} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {openGroups[group.key] && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="space-y-2 pl-1"
+                        >
+                          {group.items.map((item, index) => {
+                            const Icon = item.icon
+                            const isActive = pathname === item.href
+                            const delay = (gIndex * 0.05) + (index * 0.06)
+                            return (
+                              <motion.div
+                                key={item.href}
+                                initial="hidden"
+                                animate="visible"
+                                variants={itemVariants}
+                                transition={{ duration: 0.25, delay }}
+                              >
+                                <Link href={item.href}>
+                                  <motion.div
+                                    className={cn(
+                                      "group relative flex items-center rounded-lg transition-colors duration-200 cursor-pointer",
+                                      "px-3 h-10",
+                                      isActive 
+                                        ? "bg-gray-900 text-white"
+                                        : "bg-white hover:bg-gray-100 text-gray-800"
+                                    )}
+                                    onMouseEnter={() => setHoveredItem(item.href)}
+                                    onMouseLeave={() => setHoveredItem(null)}
+                                    whileHover={{ scale: 1.01, y: -1 }}
+                                    whileTap={{ scale: 0.99 }}
+                                  >
+                                    <div className={cn(
+                                      "flex items-center justify-center flex-shrink-0",
+                                      "w-8 h-8"
+                                    )}>
+                                      <Icon className={cn(
+                                        "transition-colors duration-200",
+                                        "h-5 w-5",
+                                        isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
+                                      )} />
+                                    </div>
+                                    <motion.div
+                                      initial={{ opacity: 0, x: -10 }}
+                                      animate={{ opacity: 1, x: 0 }}
+                                      exit={{ opacity: 0, x: -10 }}
+                                      transition={{ duration: 0.25, ease: "easeOut" }}
+                                      className="ml-4 flex-1"
+                                    >
+                                      <span className={cn(
+                                        "font-medium text-sm transition-colors duration-200 tracking-wide",
+                                        isActive ? "text-white" : "text-gray-800"
+                                      )}>
+                                        {item.title}
+                                      </span>
+                                    </motion.div>
+                                  </motion.div>
+                                </Link>
+                              </motion.div>
+                            )
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))
+            })()
+          )}
         </nav>
 
         {/* Collapse Toggle Icon - Simple and clean */}
