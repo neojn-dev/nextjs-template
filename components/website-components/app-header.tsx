@@ -7,6 +7,7 @@ import {
   LogOut,
   Building2
 } from "lucide-react"
+import { layout, header as h } from "@/lib/styles"
 
 export function AppHeader() {
   const { data: session, status } = useSession()
@@ -16,17 +17,17 @@ export function AppHeader() {
   }
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <header className={h.shell}>
+      <div className={layout.container}>
+        <div className={h.bar}>
           {/* Left Side - Brand / Home link */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-lg bg-gray-900 flex items-center justify-center text-white">
+            <div className={h.brandIconBox}>
               <Building2 className="h-5 w-5" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-semibold text-gray-900 group-hover:underline">Data Panel</span>
-              <span className="text-xs text-gray-500">Management System</span>
+              <span className={h.brandTitle}>Data Panel</span>
+              <span className={h.brandSubtitle}>Management System</span>
             </div>
           </Link>
 
@@ -38,7 +39,7 @@ export function AppHeader() {
               <>
 
                 {/* User Name */}
-                <span className="text-sm font-medium text-gray-700">
+                <span className={h.userText}>
                   Welcome, {session?.user?.username || 'User'}
                 </span>
 

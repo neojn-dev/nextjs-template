@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getFilteredNavigationItems, type NavigationItem } from "@/lib/navigation"
+import { sidebar as s } from "@/lib/styles"
 
 interface SidebarProps {
   isCollapsed?: boolean
@@ -77,26 +78,17 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                   <Link href={item.href}>
                     <motion.div
                       className={cn(
-                        "group relative flex items-center rounded-lg transition-colors duration-200 cursor-pointer",
-                        "h-10 px-0 justify-center",
-                        isActive 
-                          ? "bg-gray-900 text-white"
-                          : "bg-white hover:bg-gray-100 text-gray-700"
+                        s.rowBase,
+                        "px-0 justify-center",
+                        isActive ? s.rowActive : "bg-white hover:bg-gray-100 text-gray-700"
                       )}
                       onMouseEnter={() => setHoveredItem(item.href)}
                       onMouseLeave={() => setHoveredItem(null)}
                       whileHover={{ scale: 1.015, y: -1 }}
                       whileTap={{ scale: 0.99 }}
                     >
-                      <div className={cn(
-                        "flex items-center justify-center flex-shrink-0",
-                        "w-7 h-7"
-                      )}>
-                        <Icon className={cn(
-                          "transition-colors duration-200",
-                          "h-5 w-5",
-                          isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
-                        )} />
+                      <div className={cn(s.iconBoxSm)}>
+                        <Icon className={cn(s.icon, isActive ? s.iconActive : s.iconInactive)} />
                       </div>
                       <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-white text-gray-700 text-xs font-medium rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md border border-gray-200">
                         {item.title}
@@ -135,10 +127,10 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                     <button
                       type="button"
                       onClick={() => setOpenGroups(prev => ({ ...prev, [group.key]: !prev[group.key] }))}
-                      className="w-full h-10 flex items-center justify-between px-3 text-xs font-semibold tracking-wide text-gray-700 uppercase rounded-lg bg-white border border-gray-200 hover:bg-gray-100 transition-colors"
+                      className={s.headerButton}
                     >
                       <span>{group.title}</span>
-                      <ChevronDown className={cn("h-4 w-4 text-gray-500 transition-transform", openGroups[group.key] ? "rotate-0" : "-rotate-90")} />
+                      <ChevronDown className={cn(s.headerCaret, openGroups[group.key] ? "rotate-0" : "-rotate-90")} />
                     </button>
                     <AnimatePresence initial={false}>
                       {openGroups[group.key] && (
@@ -164,26 +156,17 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                                 <Link href={item.href}>
                                   <motion.div
                                     className={cn(
-                                      "group relative flex items-center rounded-lg transition-colors duration-200 cursor-pointer",
-                                      "px-3 h-10",
-                                      isActive 
-                                        ? "bg-gray-900 text-white"
-                                        : "bg-white hover:bg-gray-100 text-gray-800"
+                                      s.rowBase,
+                                      "px-3",
+                                      isActive ? s.rowActive : s.rowInactive
                                     )}
                                     onMouseEnter={() => setHoveredItem(item.href)}
                                     onMouseLeave={() => setHoveredItem(null)}
                                     whileHover={{ scale: 1.01, y: -1 }}
                                     whileTap={{ scale: 0.99 }}
                                   >
-                                    <div className={cn(
-                                      "flex items-center justify-center flex-shrink-0",
-                                      "w-8 h-8"
-                                    )}>
-                                      <Icon className={cn(
-                                        "transition-colors duration-200",
-                                        "h-5 w-5",
-                                        isActive ? "text-white" : "text-gray-500 group-hover:text-gray-700"
-                                      )} />
+                                    <div className={cn(s.iconBoxMd)}>
+                                      <Icon className={cn(s.icon, isActive ? s.iconActive : s.iconInactive)} />
                                     </div>
                                     <motion.div
                                       initial={{ opacity: 0, x: -10 }}

@@ -1,23 +1,24 @@
 "use client"
 
 import Link from "next/link"
-import { Building2, Shield, Heart } from "lucide-react"
+import { Building2, Shield } from "lucide-react"
+import { layout, footer as f } from "@/lib/styles"
 
 export function AppFooter() {
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 flex-shrink-0">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center py-4 space-y-2 sm:space-y-0">
+    <footer className={f.shell}>
+      <div className={layout.container}>
+        <div className={f.bar}>
           {/* Left Side - Brand and Copyright */}
-          <div className="flex items-center space-x-2">
+          <div className={f.left}>
             <Building2 className="h-4 w-4 text-blue-600" />
-            <span className="text-sm text-gray-600">
+            <span className={f.smallMuted}>
               © 2024 AdminPanel. All rights reserved.
             </span>
           </div>
 
           {/* Center - Status */}
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <div className={f.center}>
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span>System Online</span>
@@ -29,11 +30,11 @@ export function AppFooter() {
           </div>
 
           {/* Right Side - Links and Version */}
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <Link href="/help" className="hover:text-blue-600 transition-colors">
+          <div className={f.right}>
+            <Link href="/help" className={f.link}>
               Help
             </Link>
-            <Link href="/privacy" className="hover:text-blue-600 transition-colors">
+            <Link href="/privacy" className={f.link}>
               Privacy
             </Link>
             <span className="text-xs">v1.0.0</span>
