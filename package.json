@@ -17,7 +17,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^1.4.0",
@@ -95,7 +96,9 @@
     "tailwindcss": "^3.3.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^2.0.5",
+    "vite-tsconfig-paths": "^4.3.2"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

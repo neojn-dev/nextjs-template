@@ -1,3 +1,21 @@
+## Workflows: Transfer Requests
+
+Feature-gated by `ENABLE_WORKFLOWS=true` (default). Adds a Workflows section with a Transfer Requests flow:
+
+- User creates a request with attachments and selects a Supervisor.
+- Supervisor reviews: approve, request changes (with comment), reject; may assign a Manager.
+- Manager finalizes: approve or reject; may request changes.
+
+States: Draft → Submitted → SupervisorApproved | SupervisorChangesRequested | SupervisorRejected → ManagerApproved | ManagerChangesRequested | ManagerRejected.
+
+API endpoints under `/api/workflows/transfer-requests/*` include list with pagination, details, actions, approver listing, resubmit, and stats. Email notifications are sent on key transitions (configure SMTP in `.env`).
+
+Run migrations after pulling:
+
+```bash
+npx prisma migrate dev
+```
+
 # NextJS Template App
 
 A comprehensive, production-ready Next.js 14 starter template with authentication, data management, and modern UI components.

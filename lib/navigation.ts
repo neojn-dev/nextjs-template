@@ -15,6 +15,9 @@ import {
   Folder
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
+// Do not import server-only config here; this file runs on the client too
+// Use a public env flag to feature-gate client navigation safely
+const workflowsEnabled = (process.env.NEXT_PUBLIC_ENABLE_WORKFLOWS ?? "true") === "true"
 
 export interface NavigationItem {
   title: string
@@ -38,6 +41,15 @@ const allNavigationItems: NavigationItem[] = [
     activeIconBg: "bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-300 shadow-lg shadow-blue-200/50",
     textColor: "text-blue-700"
   },
+  ...(workflowsEnabled ? [{
+    title: "Transfer Requests",
+    description: "Workflows",
+    href: "/workflows/transfer-requests",
+    icon: Folder,
+    activeColor: "from-teal-500 to-emerald-500",
+    activeIconBg: "bg-gradient-to-br from-teal-500 to-emerald-500 border-teal-300 shadow-lg shadow-teal-200/50",
+    textColor: "text-teal-700"
+  }] : []),
   {
     title: "My Profile",
     description: "Your account",

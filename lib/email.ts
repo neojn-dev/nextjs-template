@@ -157,3 +157,12 @@ export async function sendTemporaryPasswordEmail(email: string, password: string
     `,
   })
 }
+
+export async function sendWorkflowNotification(toEmail: string, subject: string, html: string) {
+  await transporter.sendMail({
+    from: config.email.from,
+    to: toEmail,
+    subject,
+    html,
+  })
+}

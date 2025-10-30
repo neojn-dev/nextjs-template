@@ -1,3 +1,4 @@
+import 'server-only'
 import { z } from "zod"
 
 const envSchema = z.object({
@@ -12,6 +13,7 @@ const envSchema = z.object({
   FROM_EMAIL: z.string().email(),
   APP_NAME: z.string().default("NextJS Template App"),
   APP_URL: z.string().url().default("http://localhost:3000"),
+  ENABLE_WORKFLOWS: z.string().optional().default("true"),
 })
 
 export const env = envSchema.parse({
@@ -26,12 +28,16 @@ export const env = envSchema.parse({
   FROM_EMAIL: process.env.FROM_EMAIL,
   APP_NAME: process.env.APP_NAME,
   APP_URL: process.env.APP_URL,
+  ENABLE_WORKFLOWS: process.env.ENABLE_WORKFLOWS,
 })
 
 export const config = {
   app: {
     name: env.APP_NAME,
     url: env.APP_URL,
+  },
+  features: {
+    workflows: env.ENABLE_WORKFLOWS === "true",
   },
   auth: {
     secret: env.NEXTAUTH_SECRET,

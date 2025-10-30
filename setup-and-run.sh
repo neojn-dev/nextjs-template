@@ -177,6 +177,18 @@ MIGRATION_SUCCESS=false
 if echo "$MIGRATION_STATUS" | grep -q "Database schema is up to date"; then
     print_success "Database is already up to date!"
     MIGRATION_SUCCESS=true
+
+    # Dev convenience: ensure schema changes without migrations are synced (e.g. newly added models)
+    # This is safe for local dev environments and fixes cases where new models (like workflow tables)
+    # exist in schema.prisma but have no migration yet.
+    print_info "Ensuring development database schema is synced (running prisma db push)..."
+    if npx prisma db push 2>&1; then
+        print_success "Prisma schema synced to database."
+        # Regenerate client in case push introduced new tables
+        npx prisma generate > /dev/null 2>&1 || true
+    else
+        print_warning "Prisma db push failed. Continuing with existing schema..."
+    fi
 elif echo "$MIGRATION_STATUS" | grep -q "following migration have not yet been applied"; then
     print_info "Pending migrations found. Applying migrations..."
     MIGRATION_SUCCESS=false

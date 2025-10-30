@@ -38,7 +38,8 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     user: true,
     city: true,
-    analytics: true
+    analytics: true,
+    workflows: true
   })
 
   // Get filtered navigation items based on user role
@@ -117,6 +118,11 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
                   key: "city",
                   title: "City Data",
                   items: filteredNavigationItems.filter(i => ["/doctors", "/engineers", "/teachers", "/lawyers"].includes(i.href))
+                },
+                {
+                  key: "workflows",
+                  title: "Workflows",
+                  items: filteredNavigationItems.filter(i => ["/workflows/transfer-requests"].includes(i.href))
                 }
               ]
 

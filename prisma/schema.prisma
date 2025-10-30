@@ -44,7 +44,7 @@ model User {
   passwordHash       String
   firstName          String?
   lastName           String?
-  profileImage       String?   // relative path to avatar image under uploads/avatars
+  profileImage       String? // relative path to avatar image under uploads/avatars
   roleId             String?
   emailVerified      DateTime?
   isActive           Boolean   @default(true)
@@ -53,12 +53,19 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  role                Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  accounts            Account[]
-  sessions            Session[]
-  uploads             Upload[]
-  verificationTokens  VerificationToken[]
-  passwordResetTokens PasswordResetToken[]
+  role                       Role?                @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  accounts                   Account[]
+  sessions                   Session[]
+  uploads                    Upload[]
+  verificationTokens         VerificationToken[]
+  passwordResetTokens        PasswordResetToken[]
+  // Inverse relations for workflows and audit
+  createdTransferRequests    TransferRequest[]    @relation("CreatedByUser")
+  supervisedTransferRequests TransferRequest[]    @relation("SupervisorUser")
+  managedTransferRequests    TransferRequest[]    @relation("ManagerUser")
+  approvedSteps              ApprovalStep[]       @relation("ApproverUser")
+  authoredTransferComments   TransferComment[]    @relation("AuthorUser")
+  auditLogs                  AuditLog[]           @relation("ActorUser")
 
   @@index([roleId])
   @@index([isActive])
@@ -110,7 +117,9 @@ model Upload {
   userId       String
   createdAt    DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Inverse relation for transfer attachments
+  attachments TransferAttachment[] @relation("UploadAttachment")
 }
 
 model Teacher {
@@ -227,4 +236,134 @@ model Lawyer {
   @@index([department, isActive])
   @@index([firstName, lastName])
   @@index([email])
+}
+
+/// Workflow Enums for Transfer Requests
+enum RequestStatus {
+  Draft
+  Submitted
+  SupervisorApproved
+  SupervisorChangesRequested
+  SupervisorRejected
+  ManagerApproved
+  ManagerChangesRequested
+  ManagerRejected
+}
+
+enum StepStatus {
+  Pending
+  Approved
+  ChangesRequested
+  Rejected
+}
+
+enum ApprovalRole {
+  Supervisor
+  Manager
+}
+
+/// Transfer Request workflow models
+model TransferRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Business fields
+  title        String
+  purpose      String?
+  fromLocation String
+  toLocation   String
+  itemsJson    String? // JSON string for item details (name, quantity, unit)
+
+  // Workflow fields
+  status      RequestStatus @default(Draft)
+  submittedAt DateTime?
+  completedAt DateTime?
+
+  // Actors
+  createdById  String
+  supervisorId String?
+  managerId    String?
+
+  createdBy  User  @relation("CreatedByUser", fields: [createdById], references: [id], onDelete: Cascade)
+  supervisor User? @relation("SupervisorUser", fields: [supervisorId], references: [id], onDelete: SetNull)
+  manager    User? @relation("ManagerUser", fields: [managerId], references: [id], onDelete: SetNull)
+
+  steps       ApprovalStep[]
+  attachments TransferAttachment[]
+  comments    TransferComment[]
+
+  @@index([createdById])
+  @@index([supervisorId])
+  @@index([managerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ApprovalStep {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  decidedAt DateTime?
+
+  requestId  String
+  role       ApprovalRole
+  approverId String?
+  status     StepStatus   @default(Pending)
+  comment    String?
+
+  request  TransferRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approver User?           @relation("ApproverUser", fields: [approverId], references: [id], onDelete: SetNull)
+
+  @@index([requestId])
+  @@index([role])
+  @@index([status])
+}
+
+model TransferAttachment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  requestId String
+  uploadId  String
+  label     String?
+
+  request TransferRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  upload  Upload          @relation("UploadAttachment", fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([uploadId])
+}
+
+model TransferComment {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  requestId  String
+  authorId   String
+  authorRole ApprovalRole
+  body       String
+
+  request TransferRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User            @relation("AuthorUser", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([authorId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  entityType String
+  entityId   String
+  action     String
+  actorId    String?
+  fromStatus String?
+  toStatus   String?
+  data       String?
+
+  actor User? @relation("ActorUser", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
