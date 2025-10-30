@@ -81,10 +81,10 @@ export default function AppLayout({
     checkPasswordRequirement()
   }, [session?.user?.id, mounted])
 
-  // Handle mandatory password change redirect
+  // Handle mandatory password change redirect - redirect to profile page to show modal
   useEffect(() => {
-    if (mounted && mustChangePassword && !checkingPassword && pathname !== '/change-password') {
-      router.push('/change-password?mandatory=true')
+    if (mounted && mustChangePassword && !checkingPassword && pathname !== '/profile') {
+      router.push('/profile?mustChangePassword=true')
     }
   }, [mounted, mustChangePassword, checkingPassword, pathname, router])
 
@@ -125,8 +125,8 @@ export default function AppLayout({
   }
 
   // Don't render main app if user must change password (will redirect)
-  if (mustChangePassword && pathname !== '/change-password') {
-    return <AppLoadingPage text="Redirecting to password change..." />
+  if (mustChangePassword && pathname !== '/profile') {
+    return <AppLoadingPage text="Redirecting to profile..." />
   }
 
   return (

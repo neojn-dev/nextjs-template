@@ -8,6 +8,7 @@ declare module "next-auth" {
       username: string
       role: string
       roleId?: string | null
+      createdAt?: Date
     } & DefaultSession["user"]
     rememberMe?: boolean
   }
@@ -17,6 +18,7 @@ declare module "next-auth" {
     role: string
     roleId?: string | null
     profileImage?: string | null
+    createdAt?: Date
     rememberMe?: boolean
   }
 }
@@ -28,6 +30,7 @@ declare module "next-auth/jwt" {
     role: string
     roleId?: string | null
     profileImage?: string | null
+    createdAt?: Date
     rememberMe?: boolean
   }
 }

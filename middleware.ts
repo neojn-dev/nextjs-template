@@ -24,8 +24,7 @@ export default withAuth(
             req.nextUrl.pathname.startsWith("/signup") ||
             req.nextUrl.pathname.startsWith("/verify") ||
             req.nextUrl.pathname.startsWith("/forgot-password") ||
-            req.nextUrl.pathname.startsWith("/reset-password") ||
-            req.nextUrl.pathname.startsWith("/change-password")) {
+            req.nextUrl.pathname.startsWith("/reset-password")) {
           return true
         }
         
@@ -56,7 +55,6 @@ export const config = {
     "/signup", 
     "/verify",
     "/forgot-password",
-    "/reset-password",
-    "/change-password/:path*"
+    "/reset-password"
   ]
 }

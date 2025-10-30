@@ -66,6 +66,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role?.name || 'User', // Use role name or default to 'User'
           roleId: user.roleId,
           profileImage: user.profileImage,
+          createdAt: user.createdAt,
           rememberMe: credentials.rememberMe === "true",
         }
       }
@@ -99,6 +100,7 @@ export const authOptions: NextAuthOptions = {
           token.roleId = user.roleId
           token.username = user.username
           token.profileImage = user.profileImage
+          token.createdAt = user.createdAt
           token.rememberMe = user.rememberMe
           
           // Set token expiration based on rememberMe preference
@@ -127,6 +129,7 @@ export const authOptions: NextAuthOptions = {
           session.user.roleId = token.roleId as string | null
           session.user.username = token.username as string
           session.user.image = token.profileImage as string | null | undefined
+          session.user.createdAt = token.createdAt as Date | undefined
           session.rememberMe = token.rememberMe as boolean
         }
         return session
