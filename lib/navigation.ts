@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   UserCog,
+  UserCircle2,
   GraduationCap,
   Briefcase,
   HardHat,
@@ -36,6 +37,15 @@ const allNavigationItems: NavigationItem[] = [
     activeColor: "from-blue-500 to-cyan-500",
     activeIconBg: "bg-gradient-to-br from-blue-500 to-cyan-500 border-blue-300 shadow-lg shadow-blue-200/50",
     textColor: "text-blue-700"
+  },
+  {
+    title: "My Profile",
+    description: "Your account",
+    href: "/profile",
+    icon: UserCircle2,
+    activeColor: "from-gray-600 to-gray-900",
+    activeIconBg: "bg-gradient-to-br from-gray-600 to-gray-900 border-gray-300 shadow-lg shadow-gray-200/50",
+    textColor: "text-gray-800"
   },
   {
     title: "File Manager",

@@ -44,6 +44,7 @@ model User {
   passwordHash       String
   firstName          String?
   lastName           String?
+  profileImage       String?   // relative path to avatar image under uploads/avatars
   roleId             String?
   emailVerified      DateTime?
   isActive           Boolean   @default(true)

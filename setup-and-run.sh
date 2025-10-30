@@ -3,7 +3,26 @@
 # NextJS Template App - Setup & Run Script
 # This script will set up the environment and start the development server
 
-set -e  # Exit on any error
+# Don't use set -e as we want to handle errors gracefully
+set -u  # Exit on undefined variables
+set -o pipefail  # Exit on pipe failures
+
+# Initialize PID variables
+NEXTJS_PID=""
+PRISMA_STUDIO_PID=""
+TAIL_PID=""
+
+# Cleanup function to ensure processes are killed on exit
+cleanup_all() {
+    echo ""
+    echo "🛑 Cleaning up processes..."
+    [ -n "$NEXTJS_PID" ] && kill $NEXTJS_PID 2>/dev/null || true
+    [ -n "$PRISMA_STUDIO_PID" ] && kill $PRISMA_STUDIO_PID 2>/dev/null || true
+    [ -n "$TAIL_PID" ] && kill $TAIL_PID 2>/dev/null || true
+    exit 0
+}
+
+# Trap signals to ensure cleanup (will be set up later)
 
 # Colors for output
 RED='\033[0;31m'
@@ -136,11 +155,17 @@ print_step "Setting up database..."
 
 # Generate Prisma client
 print_info "Generating Prisma client..."
-if npm run db:generate; then
+if npm run db:generate 2>&1; then
     print_success "Prisma client generated successfully!"
 else
-    print_error "Failed to generate Prisma client."
-    exit 1
+    print_warning "Initial Prisma client generation encountered an issue, retrying..."
+    # Retry with direct prisma command
+    if npx prisma generate 2>&1; then
+        print_success "Prisma client generated successfully on retry!"
+    else
+        print_error "Failed to generate Prisma client after retry."
+        print_info "Continuing anyway - Prisma client might regenerate later..."
+    fi
 fi
 
 # Check migration status and handle issues automatically
@@ -474,24 +499,16 @@ if curl -s http://localhost:3000 > /dev/null 2>&1; then
     tail -f /tmp/nextjs.log &
     TAIL_PID=$!
     
-    # Function to cleanup on exit
-    cleanup() {
-        echo ""
-        print_info "Shutting down servers..."
-        kill $NEXTJS_PID 2>/dev/null || true
-        kill $PRISMA_STUDIO_PID 2>/dev/null || true
-        kill $TAIL_PID 2>/dev/null || true
-        exit 0
-    }
-    
-    trap cleanup SIGINT SIGTERM
+    # Set up trap for cleanup
+    trap cleanup_all SIGINT SIGTERM EXIT
     
     # Wait for Next.js process
-    wait $NEXTJS_PID
+    wait $NEXTJS_PID || true
+    cleanup_all
 else
     print_error "Next.js server failed to start"
     print_info "Check /tmp/nextjs.log for details"
-    kill $PRISMA_STUDIO_PID 2>/dev/null || true
+    [ -n "$PRISMA_STUDIO_PID" ] && kill $PRISMA_STUDIO_PID 2>/dev/null || true
     exit 1
 fi
 

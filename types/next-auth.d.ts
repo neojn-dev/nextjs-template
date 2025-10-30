@@ -16,6 +16,7 @@ declare module "next-auth" {
     username: string
     role: string
     roleId?: string | null
+    profileImage?: string | null
     rememberMe?: boolean
   }
 }
@@ -26,6 +27,7 @@ declare module "next-auth/jwt" {
     username: string
     role: string
     roleId?: string | null
+    profileImage?: string | null
     rememberMe?: boolean
   }
 }

@@ -104,19 +104,19 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
             (() => {
               const groups: { key: string; title: string; items: NavigationItem[] }[] = [
                 {
+                  key: "analytics",
+                  title: "Analytics",
+                  items: filteredNavigationItems.filter(i => ["/dashboard", "/files"].includes(i.href))
+                },
+                {
                   key: "user",
                   title: "User Management",
-                  items: filteredNavigationItems.filter(i => ["/users", "/roles"].includes(i.href))
+                  items: filteredNavigationItems.filter(i => ["/profile", "/users", "/roles"].includes(i.href))
                 },
                 {
                   key: "city",
                   title: "City Data",
                   items: filteredNavigationItems.filter(i => ["/doctors", "/engineers", "/teachers", "/lawyers"].includes(i.href))
-                },
-                {
-                  key: "analytics",
-                  title: "Analytics",
-                  items: filteredNavigationItems.filter(i => ["/dashboard", "/files"].includes(i.href))
                 }
               ]
 

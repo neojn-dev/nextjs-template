@@ -65,6 +65,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           role: user.role?.name || 'User', // Use role name or default to 'User'
           roleId: user.roleId,
+          profileImage: user.profileImage,
           rememberMe: credentials.rememberMe === "true",
         }
       }
@@ -79,13 +80,25 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       try {
+        // On session update trigger, fetch latest profileImage
+        if (trigger === "update") {
+          const dbUser = await db.user.findUnique({
+            where: { id: token.id as string },
+            select: { profileImage: true }
+          })
+          if (dbUser) {
+            token.profileImage = dbUser.profileImage
+          }
+        }
+        
         if (user) {
           token.id = user.id
           token.role = user.role
           token.roleId = user.roleId
           token.username = user.username
+          token.profileImage = user.profileImage
           token.rememberMe = user.rememberMe
           
           // Set token expiration based on rememberMe preference
@@ -113,6 +126,7 @@ export const authOptions: NextAuthOptions = {
           session.user.role = token.role as string
           session.user.roleId = token.roleId as string | null
           session.user.username = token.username as string
+          session.user.image = token.profileImage as string | null | undefined
           session.rememberMe = token.rememberMe as boolean
         }
         return session
