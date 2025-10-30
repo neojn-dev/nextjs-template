@@ -45,13 +45,21 @@ export async function GET(
       
       const contentType = mimeTypes[ext] || "application/octet-stream"
 
+      const url = new URL(request.url)
+      const download = url.searchParams.get("download") === "1"
+      const headers: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Length": fileBuffer.length.toString(),
+        "Cache-Control": "private, max-age=3600",
+      }
+      if (download) {
+        const baseName = path.basename(absPath)
+        headers["Content-Disposition"] = `attachment; filename="${encodeURIComponent(baseName)}"`
+      }
+
       return new NextResponse(fileBuffer, {
         status: 200,
-        headers: {
-          "Content-Type": contentType,
-          "Content-Length": fileBuffer.length.toString(),
-          "Cache-Control": "private, max-age=3600",
-        },
+        headers,
       })
     } catch (error) {
       return NextResponse.json({ error: "Invalid path" }, { status: 400 })

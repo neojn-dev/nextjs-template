@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     const targetPath = (formData.get("path") as string) || ""
+    const providedName = ((formData.get("name") as string) || "").trim()
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json({ error: "File too large" }, { status: 400 })
@@ -25,15 +26,29 @@ export async function POST(request: NextRequest) {
 
     const targetDir = resolveSafePath(targetPath)
     await fs.mkdir(targetDir, { recursive: true })
-    const filePath = resolveSafePath(path.join(targetPath, file.name))
+    // Determine final filename
+    let finalName = file.name
+    if (providedName) {
+      const inputExt = path.extname(providedName)
+      const originalExt = path.extname(file.name)
+      if (!inputExt && originalExt) {
+        finalName = `${providedName}${originalExt}`
+      } else {
+        finalName = providedName
+      }
+      // Basic sanitize: remove path separators
+      finalName = finalName.replace(/[\\/]/g, "-")
+    }
+
+    const filePath = resolveSafePath(path.join(targetPath, finalName))
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await fs.writeFile(filePath, buffer)
 
     return NextResponse.json({
-      name: file.name,
-      path: path.join(targetPath, file.name).replace(/\\/g, "/"),
+      name: finalName,
+      path: path.join(targetPath, finalName).replace(/\\/g, "/"),
       size: file.size,
       type: file.type,
     })
