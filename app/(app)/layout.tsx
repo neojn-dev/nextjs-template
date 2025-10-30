@@ -131,30 +131,30 @@ export default function AppLayout({
 
   return (
     <ErrorBoundary>
-      <div className="h-screen bg-gray-50 flex overflow-hidden">
-        {/* Full Height Sidebar */}
-        <div className="hidden lg:block h-full flex-shrink-0">
-          <Sidebar isCollapsed={isCollapsed} onToggle={toggleCollapse} />
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        {/* Full-width App Header */}
+        <div className="flex-shrink-0 w-full">
+          <AppHeader />
         </div>
 
-        {/* Main Content Area - Header, Content, Footer */}
-        <div className="flex-1 flex flex-col h-full min-h-0">
-          {/* App Header - Positioned to the right of sidebar */}
-          <div className="flex-shrink-0">
-            <AppHeader />
+        {/* Middle section: Sidebar + Content */}
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Sidebar on the left, full height between header and footer */}
+          <div className="hidden lg:block h-full flex-shrink-0">
+            <Sidebar isCollapsed={isCollapsed} onToggle={toggleCollapse} />
           </div>
-          
+
           {/* Main Content - Scrollable area */}
-          <main className="flex-1 overflow-y-auto bg-gray-50 min-h-0">
+          <main className="flex-1 overflow-y-auto min-h-0">
             <div key={pathname} className="p-6 min-h-full">
               {children}
             </div>
           </main>
-          
-          {/* App Footer - Positioned to the right of sidebar */}
-          <div className="flex-shrink-0">
-            <AppFooter />
-          </div>
+        </div>
+
+        {/* Full-width App Footer */}
+        <div className="flex-shrink-0 w-full">
+          <AppFooter />
         </div>
 
         {/* Mobile Menu Button */}
@@ -169,7 +169,7 @@ export default function AppLayout({
         {/* Mobile Menu Component */}
         <MobileMenu isOpen={mobileMenuOpen} onClose={closeMobileMenu} />
       </div>
-      
+
       {/* Toast Notifications */}
       <ToastContainerWrapper />
 

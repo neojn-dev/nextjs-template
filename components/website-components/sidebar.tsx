@@ -57,46 +57,7 @@ export function Sidebar({ isCollapsed = false, onToggle }: SidebarProps) {
       </div>
 
       <div className="flex flex-col h-full relative z-10">
-        {/* Logo Section - Perfect proportions */}
-        <div className="px-6 py-8 border-b border-gray-200/60">
-          <AnimatePresence mode="wait">
-            {!isCollapsed ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex items-center space-x-4"
-              >
-                <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200/50">
-                    <Building2 className="h-6 w-6 text-white" />
-                  </div>
-                  <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-2xl opacity-20 blur-sm"></div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-gray-900 leading-tight tracking-tight">Data Panel</span>
-                  <span className="text-xs text-gray-500 leading-tight font-medium">Management System</span>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="flex justify-center"
-              >
-                <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200/50">
-                    <Building2 className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-500 via-purple-500 to-indigo-600 rounded-xl opacity-20 blur-sm"></div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Header moved to AppHeader; remove logo block to save space */}
 
         {/* Navigation - Perfect spacing */}
         <nav className="flex-1 px-4 py-6 space-y-3 overflow-y-auto">
