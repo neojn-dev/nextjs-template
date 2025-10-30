@@ -2,3 +2,4 @@
 export { Sidebar } from './sidebar'
 export { AppHeader } from './app-header'
 export { AppFooter } from './app-footer'
+export { AuthGraphic } from './auth-graphic'

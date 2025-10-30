@@ -44,4 +44,26 @@ export const footer = {
   smallMuted: "text-sm text-gray-600",
 }
 
+export const auth = {
+  page: "min-h-screen bg-gray-50 flex flex-col",
+  main: "h-screen flex overflow-hidden",
+  card: "w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-sm p-6",
+  titleWrap: "mb-6 text-center",
+  title: "text-2xl font-semibold text-gray-900",
+  error: "mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700",
+  success: "mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700",
+  dividerWrap: "relative my-6",
+  dividerLine: "absolute inset-0 flex items-center",
+  dividerHr: "w-full border-t border-gray-200",
+  dividerTextWrap: "relative flex justify-center text-xs",
+  dividerText: "px-2 bg-white text-gray-500",
+
+  // 50/50 split layout
+  split: "w-full grid grid-cols-1 lg:grid-cols-2 min-h-full",
+  graphicPane: "hidden lg:block relative h-full w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700",
+  formPane: "flex items-center justify-center w-full overflow-hidden",
+  formCenter: "w-full flex items-center justify-center py-10",
+  formMax: "w-full max-w-md",
+}
+
 

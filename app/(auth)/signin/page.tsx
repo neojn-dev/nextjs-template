@@ -25,6 +25,7 @@ import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { AuthLoadingPage } from "@/components/ui/loading-spinner"
 import { signinSchema, type SigninForm } from "@/lib/validations/auth"
+import { auth as a } from "@/lib/styles"
 import { handleApiError, getErrorMessage, ERROR_MESSAGES } from "@/lib/error-handling"
 
 
@@ -140,40 +141,31 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex items-center justify-center p-4 py-6" suppressHydrationWarning>
-        <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            
-            {/* Right Side - Form */}
+    <div className="w-full" suppressHydrationWarning>
+        <div className={a.card}>
+            {/* Form */}
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="order-2 lg:order-2"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="max-w-md mx-auto lg:mx-0">
                 {/* Header */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-center lg:text-left mb-6"
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                  className={a.titleWrap}
                 >
-                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                    Sign In
-                  </h1>
+                  <h1 className={a.title}>Sign In</h1>
                 </motion.div>
 
                 {/* Error Message */}
                 {error && (
-                  <motion.div
-                    key={error}
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3"
-                  >
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    <p className="text-red-700 text-sm">{error}</p>
+                  <motion.div key={error} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className={a.error}>
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                      <p>{error}</p>
+                    </div>
                   </motion.div>
                 )}
 
@@ -291,14 +283,12 @@ export default function SignInPage() {
                   </Button>
 
                   {/* Divider */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300" />
+                  <div className={a.dividerWrap}>
+                    <div className={a.dividerLine}>
+                      <div className={a.dividerHr} />
                     </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-gray-500">
-                        Or continue with
-                      </span>
+                    <div className={a.dividerTextWrap}>
+                      <span className={a.dividerText}>Or continue with</span>
                     </div>
                   </div>
 
@@ -364,14 +354,7 @@ export default function SignInPage() {
                     </p>
                   </motion.div>
                 </motion.form>
-              </div>
             </motion.div>
-
-            {/* Left Side - Gradient Background */}
-            <div className="order-1 lg:order-1 hidden lg:block">
-              <div className="h-full min-h-[500px] bg-gradient-to-b from-blue-600 via-purple-600 to-indigo-700 rounded-2xl"></div>
-            </div>
-          </div>
         </div>
     </div>
   )

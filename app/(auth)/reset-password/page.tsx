@@ -19,6 +19,7 @@ import {
   AlertCircle
 } from "lucide-react"
 import { resetPasswordSchema, type ResetPasswordForm, passwordRequirements } from "@/lib/validations/auth"
+import { auth as a } from "@/lib/styles"
 
 
 
@@ -120,12 +121,12 @@ function ResetPasswordPageContent() {
 
   if (isSubmitted) {
     return (
-      <div className="flex items-center justify-center p-4 py-6"><div className="w-full">
-          <div className="container-custom">
+      <div className="w-full">
+          <div className={a.card}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
               className="text-center"
             >
               {/* Success Icon */}
@@ -135,7 +136,7 @@ function ResetPasswordPageContent() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="mb-8"
               >
-                <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
                   <CheckCircle className="h-12 w-12 text-white" />
                 </div>
               </motion.div>
@@ -147,13 +148,13 @@ function ResetPasswordPageContent() {
                 transition={{ duration: 0.6, delay: 0.3 }}
                 className="mb-8"
               >
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
                   Password Reset Successfully!
                 </h1>
-                <p className="text-xl text-gray-600 mb-6">
+                <p className="text-sm text-gray-600 mb-4">
                   Your password has been updated and you can now sign in with your new credentials.
                 </p>
-                <p className="text-gray-500 max-w-md mx-auto">
+                <p className="text-gray-500 text-sm max-w-md mx-auto">
                   For security reasons, you've been logged out of all devices. Please sign in again with your new password.
                 </p>
               </motion.div>
@@ -163,11 +164,11 @@ function ResetPasswordPageContent() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="space-y-4"
+                className="space-y-3"
               >
                 <Button
                   asChild
-                  className="w-full md:w-auto h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
+                  className="w-full h-11 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   <Link href="/signin">
                     Sign In Now
@@ -179,7 +180,7 @@ function ResetPasswordPageContent() {
                   <Button
                     variant="outline"
                     asChild
-                    className="h-12 border-gray-300 hover:border-gray-400 rounded-xl transition-all duration-200"
+                    className="h-11 border-gray-300 hover:bg-gray-50 rounded-lg"
                   >
                     <Link href="/">
                       Go to Homepage
@@ -189,7 +190,7 @@ function ResetPasswordPageContent() {
                   <Button
                     variant="outline"
                     asChild
-                    className="h-12 border-gray-300 hover:border-gray-400 rounded-xl transition-all duration-200"
+                    className="h-11 border-gray-300 hover:bg-gray-50 rounded-lg"
                   >
                     <Link href="/signup">
                       Create New Account
@@ -201,31 +202,25 @@ function ResetPasswordPageContent() {
 
             </motion.div>
           </div>
-        </div></div>
+        </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center p-4 py-6"><div className="w-full">
-        <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Right Side - Form */}
+    <div className="w-full"><div className={a.card}>
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="order-2 lg:order-2"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="max-w-md mx-auto lg:mx-0">
                 {/* Header */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-center lg:text-left mb-8"
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                  className="mb-6 text-center"
                 >
-                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                  <h1 className="text-2xl font-semibold text-gray-900">
                     New Password
                   </h1>
                 </motion.div>
@@ -262,9 +257,9 @@ function ResetPasswordPageContent() {
 
                 {/* Form */}
                 <motion.form
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
+                  transition={{ duration: 0.4, delay: 0.2 }}
                   onSubmit={handleSubmit(onSubmit)}
                   className="space-y-6"
                   style={{ opacity: !token ? 0.5 : 1 }}
@@ -318,43 +313,28 @@ function ResetPasswordPageContent() {
                     )}
                   </div>
 
-                  {/* Password Requirements */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
-                    className="space-y-3"
-                  >
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Password Requirements
-                    </Label>
-                    <div className="space-y-2">
-                      {passwordRequirements.map((requirement) => {
-                        const isMet = getRequirementStatus(requirement.regex)
-                        return (
-                          <div
-                            key={requirement.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 ${
-                              isMet 
-                                ? 'bg-green-50 border border-green-200' 
-                                : 'bg-gray-50 border border-gray-200'
-                            }`}
-                          >
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                              isMet ? 'bg-green-500' : 'bg-gray-300'
-                            }`}>
-                              {isMet && <CheckCircle className="h-3 w-3 text-white" />}
+                  {/* Password Requirements - match signup behavior: hidden until typing */}
+                  {watchedPassword && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Password Requirements:</p>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        {passwordRequirements.map((requirement) => {
+                          const isMet = getRequirementStatus(requirement.regex)
+                          return (
+                            <div key={requirement.id} className={`${isMet ? 'text-green-600' : 'text-gray-500'} flex items-center gap-1.5`}>
+                              {isMet ? <CheckCircle className="h-3 w-3" /> : <span className="h-3 w-3 rounded-full bg-gray-300 inline-block" />}
+                              <span>{requirement.label}</span>
                             </div>
-                            <span className={`text-sm ${
-                              isMet ? 'text-green-700' : 'text-gray-600'
-                            }`}>
-                              {requirement.label}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
+                          )
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
 
                   {/* Confirm Password Field */}
                   <div className="space-y-2">
@@ -394,7 +374,7 @@ function ResetPasswordPageContent() {
                   <Button
                     type="submit"
                     disabled={isLoading || !token}
-                    className="w-full h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-11 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <motion.div
@@ -425,16 +405,8 @@ function ResetPasswordPageContent() {
                     </Link>
                   </motion.div>
                 </motion.form>
-              </div>
             </motion.div>
-
-            {/* Left Side - Gradient Background */}
-            <div className="order-1 lg:order-1 hidden lg:block">
-              <div className="h-full min-h-[500px] bg-gradient-to-b from-emerald-500 via-teal-600 to-blue-600 rounded-2xl"></div>
-            </div>
-          </div>
-        </div>
-      </div></div>
+        </div></div>
   )
 }
 

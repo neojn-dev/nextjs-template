@@ -17,8 +17,6 @@ import {
   Lock, 
   User, 
   ArrowRight, 
-  Github, 
-  Chrome,
   CheckCircle,
   AlertCircle,
   Check,
@@ -26,6 +24,8 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { signupSchema, type SignupForm, passwordRequirements } from "@/lib/validations/auth"
+import { auth as a } from "@/lib/styles"
+import { cn } from "@/lib/utils"
 
 
 
@@ -56,7 +56,6 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState<string | null>(null)
-  const [currentStep, setCurrentStep] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const router = useRouter()
@@ -73,15 +72,11 @@ export default function SignUpPage() {
     resolver: zodResolver(signupSchema),
     mode: "onChange",
     defaultValues: {
-      agreeToTerms: false,
-      marketingEmails: false
+      agreeToTerms: false
     }
   })
 
   const watchedFields = watch()
-
-  // Check if all required fields for step 2 are valid
-  const isStep2Valid = watchedFields.agreeToTerms
 
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true)
@@ -132,89 +127,30 @@ export default function SignUpPage() {
     console.log(`Signing up with ${provider}`)
   }
 
-  const nextStep = async () => {
-    const isValidStep = await trigger(["firstName", "lastName", "username", "email", "password", "confirmPassword"])
-    if (isValidStep) {
-      setCurrentStep(2)
-    }
-  }
-
-  const prevStep = () => {
-    setCurrentStep(1)
-  }
+  // Single-step form now; steps removed
 
 
 
   return (
-    <div className="flex items-center justify-center p-4 py-6">
-        <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            
-            {/* Right Side - Form */}
+    <div className="w-full">
+        <div className={a.card}>
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="order-2 lg:order-2"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="max-w-md mx-auto lg:mx-0">
                 {/* Header */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-center lg:text-left mb-4"
-                >
-                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                    Sign Up
-                  </h1>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className={a.titleWrap}>
+                  <h1 className={a.title}>Sign Up</h1>
                 </motion.div>
 
                 {/* Error Message */}
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3"
-                  >
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    <p className="text-red-700 text-sm">{error}</p>
-                  </motion.div>
-                )}
+                {error && (<motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className={a.error}><p>{error}</p></motion.div>)}
 
                 {/* Success Message */}
-                {success && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3"
-                  >
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <p className="text-green-700 text-sm">{success}</p>
-                  </motion.div>
-                )}
+                {success && (<motion.div initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} className={a.success}><p>{success}</p></motion.div>)}
 
-                {/* Progress Steps */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="flex items-center gap-2 mb-6"
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                    currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    1
-                  </div>
-                  <div className={`flex-1 h-1 rounded ${
-                    currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'
-                  }`}></div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                    currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
-                  }`}>
-                    2
-                  </div>
-                </motion.div>
+                {/* Steps removed for single-step signup */}
 
                 {/* Form */}
                 <motion.form
@@ -225,15 +161,14 @@ export default function SignUpPage() {
                   className="space-y-4"
                 >
                   <AnimatePresence mode="wait">
-                    {currentStep === 1 ? (
-                      <motion.div
-                        key="step1"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
-                      >
+                    <motion.div
+                      key="stepSingle"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
                         {/* First Name and Last Name Fields */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
@@ -436,25 +371,6 @@ export default function SignUpPage() {
                           )}
                         </div>
 
-                        {/* Next Step Button */}
-                        <Button
-                          type="button"
-                          onClick={nextStep}
-                          className="w-full h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200"
-                        >
-                          Continue
-                          <ArrowRight className="ml-2 h-5 w-5" />
-                        </Button>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="step2"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
-                      >
                         {/* Terms and Marketing */}
                         <div className="space-y-3">
                           <div className="flex items-start space-x-3">
@@ -489,107 +405,36 @@ export default function SignUpPage() {
                             </motion.p>
                           )}
 
-                          <div className="flex items-start space-x-3">
-                            <Checkbox
-                              id="marketingEmails"
-                              checked={watchedFields.marketingEmails}
-                              onCheckedChange={(checked) => setValue("marketingEmails", checked as boolean)}
-                              className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          {/* Marketing emails removed per request */}
+                        </div>
+                        {/* Action Button */}
+                        <Button
+                          type="submit"
+                          disabled={!watchedFields.agreeToTerms || isLoading}
+                          className={cn(
+                            "w-full h-12 font-semibold rounded-xl transition-all duration-200 disabled:cursor-not-allowed",
+                            watchedFields.agreeToTerms && !isLoading
+                              ? "bg-gray-900 text-white hover:bg-gray-800"
+                              : "bg-gray-200 text-gray-500"
+                          )}
+                        >
+                          {isLoading ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                             />
-                            <Label htmlFor="marketingEmails" className="text-sm text-gray-700 cursor-pointer">
-                              Send me marketing emails about new features and updates
-                            </Label>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={prevStep}
-                            className="flex-1 h-12 border-gray-300 hover:border-gray-400 rounded-xl transition-all duration-200"
-                          >
-                            Back
-                          </Button>
-                          <Button
-                            type="submit"
-                            disabled={isLoading || !isStep2Valid}
-                            className="flex-1 h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isLoading ? (
-                              <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                              />
-                            ) : (
-                              <>
-                                Create Account
-                                <CheckCircle className="ml-2 h-5 w-5" />
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                          ) : (
+                            <>
+                              Create Account
+                              <CheckCircle className="ml-2 h-5 w-5" />
+                            </>
+                          )}
+                        </Button>
                       </motion.div>
-                    )}
                   </AnimatePresence>
 
-                  {/* Divider */}
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300" />
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-gray-500">
-                        Or sign up with
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Social Signup Buttons */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleSocialSignup("github")}
-                      disabled={socialLoading !== null}
-                      className="h-12 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-xl transition-all duration-200"
-                    >
-                      {socialLoading === "github" ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full"
-                        />
-                      ) : (
-                        <>
-                          <Github className="mr-2 h-5 w-5" />
-                          GitHub
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => handleSocialSignup("google")}
-                      disabled={socialLoading !== null}
-                      className="h-12 border-gray-300 hover:border-gray-400 hover:bg-gray-50 rounded-xl transition-all duration-200"
-                    >
-                      {socialLoading === "google" ? (
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full"
-                        />
-                      ) : (
-                        <>
-                          <Chrome className="mr-2 h-5 w-5" />
-                          Google
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                  
 
                   {/* Sign In Link */}
                   <motion.div
@@ -609,14 +454,7 @@ export default function SignUpPage() {
                     </p>
                   </motion.div>
                 </motion.form>
-              </div>
             </motion.div>
-
-            {/* Left Side - Gradient Background */}
-            <div className="order-1 lg:order-1 hidden lg:block">
-              <div className="h-full min-h-[600px] bg-gradient-to-b from-green-500 via-emerald-600 to-blue-600 rounded-2xl"></div>
-            </div>
-          </div>
         </div>
     </div>
   )

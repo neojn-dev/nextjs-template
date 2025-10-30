@@ -16,6 +16,7 @@ import {
   CheckCircle
 } from "lucide-react"
 import { forgotPasswordSchema, type ForgotPasswordForm } from "@/lib/validations/auth"
+import { auth as a } from "@/lib/styles"
 
 
 
@@ -108,12 +109,12 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="flex items-center justify-center p-4 py-6"><div className="w-full">
-          <div className="container-custom">
+      <div className="w-full">
+          <div className={a.card}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
               className="text-center"
             >
               {/* Success Icon */}
@@ -123,7 +124,7 @@ export default function ForgotPasswordPage() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="mb-8"
               >
-                <div className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                <div className="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md">
                   <CheckCircle className="h-12 w-12 text-white" />
                 </div>
               </motion.div>
@@ -135,14 +136,14 @@ export default function ForgotPasswordPage() {
                 transition={{ duration: 0.6, delay: 0.3 }}
                 className="mb-8"
               >
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
                   Check Your Email
                 </h1>
-                <p className="text-xl text-gray-600 mb-6">
+                <p className="text-sm text-gray-600 mb-4">
                   We've sent a password reset link to{" "}
                   <span className="font-semibold text-blue-600">{getValues("email")}</span>
                 </p>
-                <p className="text-gray-500 max-w-md mx-auto">
+                <p className="text-gray-500 text-sm max-w-md mx-auto">
                   Click the link in your email to reset your password. The link will expire in 24 hours.
                 </p>
               </motion.div>
@@ -152,12 +153,12 @@ export default function ForgotPasswordPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.4 }}
-                className="space-y-4"
+                className="space-y-3"
               >
                 <Button
                   onClick={handleResendEmail}
                   disabled={isLoading}
-                  className="w-full md:w-auto h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-11 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <motion.div
@@ -177,7 +178,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     variant="outline"
                     asChild
-                    className="h-12 border-gray-300 hover:border-gray-400 rounded-xl transition-all duration-200"
+                    className="h-11 border-gray-300 hover:bg-gray-50 rounded-lg"
                   >
                     <Link href="/signin">
                       <ArrowLeft className="mr-2 h-5 w-5" />
@@ -188,7 +189,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     variant="outline"
                     asChild
-                    className="h-12 border-gray-300 hover:border-gray-400 rounded-xl transition-all duration-200"
+                    className="h-11 border-gray-300 hover:bg-gray-50 rounded-lg"
                   >
                     <Link href="/signup">
                       Create New Account
@@ -200,33 +201,20 @@ export default function ForgotPasswordPage() {
 
             </motion.div>
           </div>
-        </div></div>
+        </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-center p-4 py-6"><div className="w-full">
-        <div className="container-custom">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Right Side - Form */}
+    <div className="w-full"><div className={a.card}>
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="order-2 lg:order-2"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <div className="max-w-md mx-auto lg:mx-0">
                 {/* Header */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-center lg:text-left mb-8"
-                >
-                  <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                    Reset Password
-                  </h1>
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className={a.titleWrap}>
+                  <h1 className={a.title}>Reset Password</h1>
                 </motion.div>
 
                 {/* Form */}
@@ -235,7 +223,7 @@ export default function ForgotPasswordPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.3 }}
                   onSubmit={handleSubmit(onSubmit)}
-                  className="space-y-6"
+                  className="space-y-5"
                 >
                   {/* Email Field */}
                   <div className="space-y-2">
@@ -268,7 +256,7 @@ export default function ForgotPasswordPage() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-gradient-primary text-white font-semibold rounded-xl hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-11 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? (
                       <motion.div
@@ -288,27 +276,19 @@ export default function ForgotPasswordPage() {
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, delay: 0.4 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
                     className="text-center pt-4"
                   >
                     <Link
                       href="/signin"
-                      className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Back to Sign In
                     </Link>
                   </motion.div>
                 </motion.form>
-              </div>
             </motion.div>
-
-            {/* Left Side - Gradient Background */}
-            <div className="order-1 lg:order-1 hidden lg:block">
-              <div className="h-full min-h-[500px] bg-gradient-to-b from-blue-500 via-purple-600 to-indigo-600 rounded-2xl"></div>
-            </div>
-          </div>
-        </div>
-      </div></div>
+        </div></div>
   )
 }

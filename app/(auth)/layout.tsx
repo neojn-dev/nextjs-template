@@ -3,15 +3,30 @@ export const metadata = {
   description: 'Sign in, sign up, and manage your account',
 }
 
+import { auth as a } from "@/lib/styles"
+import { AuthGraphic } from "@/components/website-components"
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex flex-col">
-      <main className="flex-1 pt-20 lg:pt-24 pb-8">
-        {children}
+    <div className={a.page}>
+      <main className={a.main}>
+        <div className={a.split}>
+          {/* Graphic half - client-rendered */}
+          <div className={a.graphicPane}>
+            <AuthGraphic />
+          </div>
+
+          {/* Form half */}
+          <div className={a.formPane}>
+            <div className={a.formCenter}>
+              <div className={a.formMax}>{children}</div>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   )
