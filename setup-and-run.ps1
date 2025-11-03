@@ -342,6 +342,22 @@ try {
     if ($migrationStatus -match "Database schema is up to date") {
         Write-Success "Database is already up to date!"
         $migrationSuccess = $true
+        
+        # Dev convenience: ensure schema changes without migrations are synced (e.g. newly added models)
+        # This is safe for local dev environments and fixes cases where new models (like workflow tables)
+        # exist in schema.prisma but have no migration yet.
+        Write-Info "Ensuring development database schema is synced (running prisma db push)..."
+        try {
+            npx prisma db push 2>&1 | Out-Null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "Prisma schema synced to database."
+                # Regenerate client in case push introduced new tables
+                npx prisma generate 2>&1 | Out-Null
+            }
+        }
+        catch {
+            Write-Warning "Prisma db push failed. Continuing with existing schema..."
+        }
     }
     elseif ($migrationStatus -match "migration.*have not yet been applied" -or $migrationStatus -match "following migration") {
         Write-Info "Pending migrations found. Applying migrations..."
@@ -369,38 +385,48 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
     try {
         if ($retryCount -eq 1) {
             # First attempt: deploy mode
-            Write-Info "Running migrations (deploy mode)..."
-            npx prisma migrate deploy 2>&1 | Out-Null
+            Write-Info "Attempt $retryCount : Running migrations (deploy mode)..."
+            $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
             if ($LASTEXITCODE -eq 0) {
                 Write-Success "Database migrations completed!"
                 $migrationSuccess = $true
                 break
             }
+            else {
+                Write-Warning "Migration deploy failed. Checking for fixable issues..."
+            }
         }
         elseif ($retryCount -eq 2) {
             # Second attempt: Check for failed migrations and resolve
-            Write-Warning "Migration issues detected. Attempting to resolve..."
+            Write-Warning "Attempt $retryCount : Migration issues detected."
+            Write-Info "Checking if database reset is needed..."
             
-            # Try to resolve failed migrations
-            $failedMatch = $migrationStatus | Select-String -Pattern "migration\s+(\S+)\s+failed" -AllMatches
-            if ($failedMatch -and $failedMatch.Matches.Count -gt 0) {
-                $failedMigration = $failedMatch.Matches[0].Groups[1].Value
-                Write-Info "Resolving failed migration: $failedMigration"
-                echo "y" | npx prisma migrate resolve --rolled-back "$failedMigration" 2>&1 | Out-Null
+            # Check if there are broken migrations or missing tables
+            if ($migrationStatus -match "failed to apply|Cannot drop table|foreign key constraint") {
+                Write-Warning "Database may be in inconsistent state."
+                Write-Info "Attempting to fix by applying migrations with force resolve..."
+                
+                # Try to resolve failed migrations
+                $failedMatch = $migrationStatus | Select-String -Pattern "migration\s+(\S+)\s+failed" -AllMatches
+                if ($failedMatch -and $failedMatch.Matches.Count -gt 0) {
+                    $failedMigration = $failedMatch.Matches[0].Groups[1].Value
+                    Write-Info "Resolving failed migration: $failedMigration"
+                    echo "y" | npx prisma migrate resolve --rolled-back "$failedMigration" 2>&1 | Out-Null
+                }
+                
+                # Try deploy again
+                Write-Info "Retrying migrations after resolution..."
+                $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Success "Database migrations completed after resolution!"
+                    $migrationSuccess = $true
+                    break
+                }
             }
             
-            # Try deploy again
-            Write-Info "Retrying migrations after resolution..."
-            npx prisma migrate deploy 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "Database migrations completed after resolution!"
-                $migrationSuccess = $true
-                break
-            }
-            
-            # Try dev mode
-            Write-Info "Trying migrate dev mode..."
-            npx prisma migrate dev --name auto_fix 2>&1 | Out-Null
+            # Last resort: Try dev mode
+            Write-Info "Final attempt: Trying migrate dev mode..."
+            $devOutput = npx prisma migrate dev --name auto_fix 2>&1 | Out-String
             if ($LASTEXITCODE -eq 0) {
                 Write-Success "Database migrations completed!"
                 $migrationSuccess = $true
@@ -409,8 +435,9 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
         }
         elseif ($retryCount -eq 3) {
             # Final attempt: Reset and rebuild
-            Write-Warning "All migration attempts failed. Attempting automatic database reset..."
-            Write-Info "WARNING: This will delete all existing data!"
+            Write-Error "All migration attempts failed."
+            Write-Warning "Attempting automatic database reset..."
+            Write-Info "Resetting database to fix migration issues..."
             
             try {
                 # Reset database
@@ -419,9 +446,9 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
                     Write-Success "Database reset successful!"
                     Write-Info "Applying fresh migrations..."
                     
-                    npx prisma migrate deploy 2>&1 | Out-Null
+                    $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
                     if ($LASTEXITCODE -ne 0) {
-                        npx prisma migrate dev --name init 2>&1 | Out-Null
+                        $devOutput = npx prisma migrate dev --name init 2>&1 | Out-String
                     }
                     
                     if ($LASTEXITCODE -eq 0) {
@@ -656,7 +683,63 @@ Write-Host ""
 Write-Host "  💡 Tip: All passwords are: password123" -ForegroundColor Cyan
 Write-Host "  🔗 Sign in at: http://localhost:3000/signin" -ForegroundColor Cyan
 Write-Host ""
+
+# ============================================================
+# STEP 18: FINAL CREDENTIALS DISPLAY (BEFORE STARTING SERVERS)
+# ============================================================
+
+Write-Host ""
 Write-Host "============================================================" -ForegroundColor Magenta
+Write-Host "📋 LOGIN CREDENTIALS - Copy these for easy access" -ForegroundColor Magenta
+Write-Host "============================================================" -ForegroundColor Magenta
+Write-Host ""
+
+Write-Host "  🔑 ADMIN ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: admin"
+Write-Host "     Password: password123"
+Write-Host "     Email:    admin@example.com"
+Write-Host ""
+
+Write-Host "  👥 MANAGER ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: manager"
+Write-Host "     Password: password123"
+Write-Host "     Email:    manager@example.com"
+Write-Host ""
+
+Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
+Write-Host "     Username: analyst"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "     Username: jdoe"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "     Username: asmith"
+Write-Host "     Password: password123"
+Write-Host ""
+
+Write-Host "  💡 Tip: All passwords are: password123" -ForegroundColor Cyan
+Write-Host "============================================================" -ForegroundColor Magenta
+Write-Host ""
+
+# ============================================================
+# STEP 19: FINAL CREDENTIALS REMINDER
+# ============================================================
+
+Write-Host ""
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host "📋 LOGIN CREDENTIALS - Ready to use!" -ForegroundColor Magenta
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
+Write-Host ""
+
+Write-Host "  🔑 ADMIN:     admin / password123" -ForegroundColor Yellow
+Write-Host "  👥 MANAGER:   manager / password123" -ForegroundColor Yellow
+Write-Host "  👤 USERS:     analyst, jdoe, asmith / password123" -ForegroundColor Yellow
+Write-Host ""
+
+Write-Host "  🔗 Sign in: http://localhost:3000/signin" -ForegroundColor Cyan
+Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
 Write-Host ""
 
 # ============================================================
@@ -681,7 +764,7 @@ Write-Info "Prisma Studio will open in browser when Next.js is ready..."
 Write-Host ""
 
 # ============================================================
-# STEP 16: FINAL CREDENTIALS REMINDER
+# STEP 17: FINAL CREDENTIALS REMINDER
 # ============================================================
 
 Write-Host ""
@@ -698,7 +781,7 @@ Write-Host "══════════════════════�
 Write-Host ""
 
 # ============================================================
-# STEP 17: START DEVELOPMENT SERVER
+# STEP 18: START DEVELOPMENT SERVER
 # ============================================================
 
 Write-Host ""
@@ -720,8 +803,8 @@ $nextjsJob = Start-Job -ScriptBlock {
 }
 
 # Wait for Next.js to start
-Write-Info "Waiting for Next.js server to start..."
-Start-Sleep -Seconds 8
+    Write-Info "Waiting for Next.js server to start..."
+    Start-Sleep -Seconds 5
 
 # Check if server is responding
 try {
@@ -758,9 +841,25 @@ try {
         Write-Host "============================================================" -ForegroundColor Magenta
         Write-Host ""
         
-        # Handle cleanup on Ctrl+C
+                # Handle cleanup on Ctrl+C
+        $cleanupHandler = {
+            Write-Host "`n🛑 Cleaning up processes..." -ForegroundColor Yellow
+            Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+            Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+            exit 0
+        }
+        
+        # Register cleanup handler
+        [Console]::TreatControlCAsInput = $false
+        $null = Register-ObjectEvent -InputObject ([System.Console]) -EventName "CancelKeyPress" -Action $cleanupHandler
+        
         try {
             # Show Next.js logs in foreground
+            Write-Host ""
+            Write-Host "========== Next.js Development Server Logs ==========" -ForegroundColor Cyan
+            Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+            Write-Host ""
+            
             while ($true) {
                 $jobOutput = Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
                 if ($jobOutput) {
@@ -817,7 +916,32 @@ catch {
             Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
             Write-Host "============================================================" -ForegroundColor Magenta
             Write-Host ""
-            Receive-Job -Job $nextjsJob -Wait
+            
+            # Register cleanup handler
+            [Console]::TreatControlCAsInput = $false
+            $null = Register-ObjectEvent -InputObject ([System.Console]) -EventName "CancelKeyPress" -Action {
+                Write-Host "`n🛑 Cleaning up processes..." -ForegroundColor Yellow
+                Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+                Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+                exit 0
+            }
+            
+            Write-Host ""
+            Write-Host "========== Next.js Development Server Logs ==========" -ForegroundColor Cyan
+            Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+            Write-Host ""
+            
+            try {
+                Receive-Job -Job $nextjsJob -Wait
+            }
+            catch {
+                Write-Host "`nStopping servers..." -ForegroundColor Yellow
+            }
+            finally {
+                Write-Host "`nCleaning up..." -ForegroundColor Yellow
+                Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+                Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+            }
         }
     }
     catch {
