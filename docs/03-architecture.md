@@ -6,48 +6,101 @@ This document explains the overall architecture of the NextJS Template App, incl
 
 ### High-Level Architecture
 
+This diagram shows how different layers of the application interact:
+
+```mermaid
+graph TB
+    subgraph "Client Layer (Browser)"
+        UI[React UI Components<br/>shadcn/ui]
+        Forms[Forms<br/>React Hook Form]
+        Tables[Data Tables<br/>TanStack Table]
+        Charts[Charts<br/>Recharts]
+    end
+    
+    subgraph "Next.js Application Layer"
+        subgraph "Server Components"
+            Pages[Pages<br/>app/*/page.tsx]
+            Layouts[Layouts<br/>app/*/layout.tsx]
+        end
+        
+        subgraph "API Routes"
+            API[API Handlers<br/>app/api/*/route.ts]
+        end
+        
+        subgraph "Middleware"
+            AuthMW[Auth Middleware<br/>Route Protection]
+            CSRF[CSRF Protection]
+        end
+    end
+    
+    subgraph "Business Logic Layer"
+        Validation[Zod Validation<br/>Schema Validation]
+        Email[Email Service<br/>nodemailer]
+        Files[File Manager<br/>Upload/Storage]
+        Workflows[Workflow Engine<br/>State Machines]
+    end
+    
+    subgraph "Data Access Layer"
+        Prisma[Prisma ORM<br/>Type-safe Queries]
+        AuthLib[NextAuth.js<br/>Session Management]
+    end
+    
+    subgraph "External Services"
+        DB[(MySQL Database<br/>Data Storage)]
+        SMTP[SMTP Server<br/>Email Sending]
+        Storage[File Storage<br/>Local/Cloud]
+    end
+    
+    UI --> Pages
+    Forms --> API
+    Tables --> API
+    Charts --> API
+    
+    Pages --> AuthMW
+    API --> AuthMW
+    AuthMW --> CSRF
+    
+    API --> Validation
+    API --> Email
+    API --> Files
+    API --> Workflows
+    
+    Validation --> Prisma
+    Email --> AuthLib
+    Email --> SMTP
+    Files --> Storage
+    Workflows --> Prisma
+    
+    AuthLib --> Prisma
+    Prisma --> DB
+    
+    style UI fill:#e3f2fd
+    style Forms fill:#e3f2fd
+    style Tables fill:#e3f2fd
+    style Charts fill:#e3f2fd
+    style Pages fill:#fff3e0
+    style API fill:#fff3e0
+    style AuthMW fill:#fce4ec
+    style Validation fill:#f1f8e9
+    style Email fill:#f1f8e9
+    style Files fill:#f1f8e9
+    style Workflows fill:#f1f8e9
+    style Prisma fill:#e8eaf6
+    style AuthLib fill:#e8eaf6
+    style DB fill:#c8e6c9
+    style SMTP fill:#c8e6c9
+    style Storage fill:#c8e6c9
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Client Layer                          │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │         React Components (Client Components)        │   │
-│  │  - UI Components (shadcn/ui)                        │   │
-│  │  - Forms with React Hook Form                       │   │
-│  │  - Data Tables (TanStack Table)                    │   │
-│  │  - Charts (Recharts)                                │   │
-│  └─────────────────────────────────────────────────────┘   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP Requests / API Calls
-┌──────────────────────────▼──────────────────────────────────┐
-│                  Next.js Application Layer                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              App Router (Server Components)          │   │
-│  │  - Pages (/app/*)                                    │   │
-│  │  - Layouts                                           │   │
-│  │  - Route Handlers (/app/api/*)                       │   │
-│  └─────────────────────────────────────────────────────┘   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │                 Middleware Layer                     │   │
-│  │  - Authentication Middleware                        │   │
-│  │  - Route Protection                                  │   │
-│  │  - CSRF Protection                                   │   │
-│  └─────────────────────────────────────────────────────┘   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼────────┐ ┌──────▼───────┐ ┌───────▼───────┐
-│   Prisma ORM   │ │  NextAuth.js  │ │   Services    │
-│                │ │               │ │               │
-│  - Client      │ │  - Sessions   │ │  - Email      │
-│  - Migrations  │ │  - JWT Tokens │ │  - File Mgmt  │
-└───────┬────────┘ └───────────────┘ └───────────────┘
-        │
-┌───────▼────────┐
-│   MySQL DB      │
-│   Database      │
-└────────────────┘
-```
+
+### Architecture Layers Explained
+
+| Layer | Components | Purpose | Runs On |
+|-------|-----------|---------|---------|
+| **Client Layer** | React Components, UI, Forms | User interface and interactions | Browser |
+| **Application Layer** | Next.js Pages, API Routes, Middleware | Request handling and routing | Server |
+| **Business Logic Layer** | Validation, Email, Files, Workflows | Business rules and processing | Server |
+| **Data Access Layer** | Prisma ORM, NextAuth.js | Database access and session management | Server |
+| **External Services** | MySQL, SMTP, File Storage | Data persistence and external services | External |
 
 ## 🎯 Design Patterns
 
@@ -199,51 +252,86 @@ app/
 
 ### Read Pattern (Server Components)
 
-```
-User Request
-    ↓
-Next.js Server Component
-    ↓
-Prisma Query
-    ↓
-MySQL Database
-    ↓
-Server Component Renders
-    ↓
-HTML Sent to Client
+This pattern is used when you need to **fetch and display data** that doesn't change frequently:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant ServerComponent
+    participant Prisma
+    participant Database
+    
+    User->>Browser: Requests Page
+    Browser->>ServerComponent: HTTP Request
+    ServerComponent->>Prisma: Query Data
+    Prisma->>Database: SQL Query
+    Database-->>Prisma: Return Data
+    Prisma-->>ServerComponent: Typed Data
+    ServerComponent->>ServerComponent: Render HTML
+    ServerComponent-->>Browser: HTML Response
+    Browser-->>User: Display Page
 ```
 
 **Advantages**:
-- No client-side JavaScript needed
-- Fast initial load
-- SEO friendly
+- ✅ No client-side JavaScript needed (faster page loads)
+- ✅ SEO friendly (search engines can read the HTML)
+- ✅ Secure (sensitive data never exposed to client)
+- ✅ Lower bandwidth (no API calls needed)
+
+**When to Use**: Displaying static or semi-static content like user lists, dashboards, read-only pages.
 
 ### Write Pattern (API Routes)
 
-```
-User Action (Form Submit)
-    ↓
-Client Component
-    ↓
-Fetch API Call
-    ↓
-API Route Handler
-    ↓
-Validation (Zod)
-    ↓
-Prisma Mutation
-    ↓
-MySQL Database
-    ↓
-Response to Client
-    ↓
-UI Update
+This pattern is used when you need to **create, update, or delete data**:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant ClientComponent
+    participant API
+    participant Validation
+    participant Prisma
+    participant Database
+    
+    User->>ClientComponent: Submits Form
+    ClientComponent->>ClientComponent: Client Validation
+    ClientComponent->>API: POST Request (JSON)
+    API->>Validation: Validate with Zod
+    alt Validation Fails
+        Validation-->>API: Error Response
+        API-->>ClientComponent: 400 Bad Request
+        ClientComponent-->>User: Show Error
+    else Validation Succeeds
+        Validation->>Prisma: Create/Update Data
+        Prisma->>Database: SQL INSERT/UPDATE
+        Database-->>Prisma: Success
+        Prisma-->>API: New/Updated Data
+        API-->>ClientComponent: 200 Success Response
+        ClientComponent->>ClientComponent: Update UI
+        ClientComponent-->>User: Show Success
+    end
 ```
 
 **Advantages**:
-- Explicit data mutations
-- Client-side validation
-- Error handling
+- ✅ Explicit data mutations (clear what's happening)
+- ✅ Server-side validation (security)
+- ✅ Error handling (user feedback)
+- ✅ Can trigger side effects (emails, notifications)
+
+**When to Use**: Form submissions, data mutations, user actions that change data.
+
+### Data Flow Comparison Table
+
+| Aspect | Server Components (Read) | API Routes (Write) |
+|--------|-------------------------|-------------------|
+| **Use Case** | Displaying data | Creating/updating data |
+| **Client JS Needed** | No | Yes |
+| **SEO Friendly** | Yes | No (but APIs don't need SEO) |
+| **Security** | High (no exposed data) | High (server validation) |
+| **Performance** | Fast (direct DB access) | Slower (HTTP overhead) |
+| **Type Safety** | Yes (Prisma types) | Yes (Zod + Prisma) |
+| **Error Handling** | Simple | Comprehensive |
 
 ## 🗄️ Database Architecture
 
@@ -280,23 +368,82 @@ const users = await db.user.findMany({
 
 ## 🔐 Authentication Architecture
 
-### Session-Based Authentication
+### Session-Based Authentication Flow
 
-**Flow**:
+Here's how authentication works in this application:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant LoginPage
+    participant API
+    participant NextAuth
+    participant bcrypt
+    participant Database
+    participant JWT
+    participant Cookie
+    participant Middleware
+    participant ProtectedPage
+    
+    User->>LoginPage: Enters Credentials
+    LoginPage->>API: POST /api/auth/signin
+    API->>NextAuth: Authorize Request
+    NextAuth->>Database: Find User by Email/Username
+    Database-->>NextAuth: User Data
+    NextAuth->>bcrypt: Compare Password
+    bcrypt-->>NextAuth: Password Valid?
+    
+    alt Password Invalid
+        NextAuth-->>API: null
+        API-->>LoginPage: 401 Unauthorized
+        LoginPage-->>User: Show Error
+    else Password Valid
+        NextAuth->>JWT: Create Token (id, email, role)
+        JWT-->>NextAuth: JWT Token
+        NextAuth->>Cookie: Set HttpOnly Cookie
+        NextAuth-->>API: Session Object
+        API-->>LoginPage: 200 Success
+        LoginPage->>User: Redirect to Dashboard
+        
+        User->>ProtectedPage: Requests Protected Route
+        ProtectedPage->>Middleware: Check Route
+        Middleware->>Cookie: Read Session Cookie
+        Cookie-->>Middleware: JWT Token
+        Middleware->>JWT: Verify Token
+        JWT-->>Middleware: Token Valid + User Info
+        Middleware->>ProtectedPage: Allow Access
+        ProtectedPage-->>User: Render Page
+    end
 ```
-Login Request
-    ↓
-NextAuth Credentials Provider
-    ↓
-Verify Credentials (bcrypt)
-    ↓
-Create Session (JWT)
-    ↓
-Store in Cookie
-    ↓
-Middleware Validates Session
-    ↓
-Allow/Deny Access
+
+### Authentication Components
+
+| Component | Purpose | Location |
+|-----------|---------|----------|
+| **NextAuth.js** | Authentication framework | `lib/auth.ts` |
+| **Credentials Provider** | Username/password authentication | `lib/auth.ts` |
+| **JWT Tokens** | Session token generation | NextAuth built-in |
+| **bcryptjs** | Password hashing | Used in API routes |
+| **Middleware** | Route protection | `middleware.ts` |
+| **Session Cookie** | Client-side session storage | NextAuth managed |
+
+### Authentication Flow States
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unauthenticated: Initial State
+    
+    Unauthenticated --> Login: User Navigates to /signin
+    Login --> Validating: User Submits Credentials
+    Validating --> Authenticated: Credentials Valid
+    Validating --> Login: Credentials Invalid
+    
+    Authenticated --> Authenticated: Access Protected Routes
+    Authenticated --> Logout: User Clicks Logout
+    Logout --> Unauthenticated: Session Cleared
+    
+    Authenticated --> SessionExpired: Token Expires
+    SessionExpired --> Unauthenticated: Redirect to Login
 ```
 
 ### Authorization (Role-Based)

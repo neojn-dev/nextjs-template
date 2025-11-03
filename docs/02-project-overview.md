@@ -49,32 +49,116 @@ It serves as a foundation that you can build upon, saving weeks of initial setup
 
 ### High-Level Architecture
 
+Here's how the entire system works together:
+
+```mermaid
+graph TB
+    subgraph "🌐 Client Side (Browser)"
+        Browser[Web Browser]
+        React[React Components<br/>User Interface]
+        Forms[Forms & Inputs]
+        Charts[Charts & Analytics]
+    end
+    
+    subgraph "⚙️ Next.js Server"
+        Pages[App Router Pages<br/>Server Components]
+        API[API Routes<br/>REST Endpoints]
+        MW[Middleware<br/>Auth & Protection]
+        Auth[NextAuth.js<br/>Authentication]
+    end
+    
+    subgraph "🔧 Business Logic"
+        Validation[Zod Validation<br/>Data Validation]
+        Email[Email Service<br/>SMTP Integration]
+        Files[File Manager<br/>Upload & Storage]
+    end
+    
+    subgraph "💾 Data Layer"
+        Prisma[Prisma ORM<br/>Database Client]
+        DB[(MySQL Database<br/>Data Storage)]
+    end
+    
+    Browser --> React
+    React --> Forms
+    React --> Charts
+    
+    Forms -->|HTTP POST| API
+    Charts -->|HTTP GET| API
+    React -->|Direct Render| Pages
+    
+    API --> MW
+    Pages --> MW
+    MW --> Auth
+    
+    API --> Validation
+    API --> Email
+    API --> Files
+    
+    Validation --> Prisma
+    Email --> Prisma
+    Files --> Prisma
+    Pages --> Prisma
+    
+    Prisma --> DB
+    
+    style Browser fill:#e3f2fd
+    style React fill:#e3f2fd
+    style Forms fill:#e3f2fd
+    style Charts fill:#e3f2fd
+    style Pages fill:#fff3e0
+    style API fill:#fff3e0
+    style MW fill:#fce4ec
+    style Auth fill:#fce4ec
+    style Validation fill:#f1f8e9
+    style Email fill:#f1f8e9
+    style Files fill:#f1f8e9
+    style Prisma fill:#e8eaf6
+    style DB fill:#c8e6c9
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Client Browser                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │   React App  │  │  Next.js UI  │  │   Charts     │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP Requests
-┌──────────────────────────▼──────────────────────────────────┐
-│                    Next.js Server                           │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │  API Routes  │  │  Middleware  │  │ Auth System  │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼────────┐ ┌──────▼───────┐ ┌───────▼───────┐
-│    Prisma      │ │   NextAuth    │ │   Email       │
-│      ORM       │ │               │ │  (SMTP)       │
-└───────┬────────┘ └───────────────┘ └───────────────┘
-        │
-┌───────▼────────┐
-│   MySQL DB     │
-│   Database     │
-└────────────────┘
+
+### Request Flow Diagram
+
+Understanding how a typical user request flows through the system:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Browser
+    participant Middleware
+    participant Page as Server Page
+    participant API as API Route
+    participant Prisma
+    participant Database
+    
+    User->>Browser: Clicks Link / Submits Form
+    Browser->>Middleware: HTTP Request
+    
+    alt Protected Route
+        Middleware->>Middleware: Check Authentication
+        alt Not Authenticated
+            Middleware-->>Browser: 302 Redirect to /signin
+            Browser-->>User: Show Login Page
+        else Authenticated
+            Middleware->>Page: Allow Request
+            Page->>Prisma: Query Database
+            Prisma->>Database: Execute SQL
+            Database-->>Prisma: Return Data
+            Prisma-->>Page: Typed Data
+            Page->>Page: Render HTML
+            Page-->>Browser: HTML Response
+            Browser-->>User: Display Page
+        end
+    else API Endpoint
+        Middleware->>API: Allow Request
+        API->>API: Validate Input (Zod)
+        API->>Prisma: Create/Update/Delete
+        Prisma->>Database: Execute SQL
+        Database-->>Prisma: Return Result
+        Prisma-->>API: Typed Result
+        API-->>Browser: JSON Response
+        Browser->>Browser: Update UI
+        Browser-->>User: Show Result
+    end
 ```
 
 ### Technology Stack

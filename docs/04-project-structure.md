@@ -4,6 +4,8 @@ This document provides a comprehensive breakdown of the project's file and folde
 
 ## 📂 Root Directory Structure
 
+Here's the complete project structure with a visual tree:
+
 ```
 nextjs-template/
 ├── app/                      # Next.js App Router (pages & API)
@@ -27,6 +29,63 @@ nextjs-template/
 ├── postcss.config.js        # PostCSS configuration
 └── README.md                # Project README
 ```
+
+### Visual Directory Tree
+
+```mermaid
+graph TD
+    Root[NextJS Template Root] --> App[app/<br/>Pages & API Routes]
+    Root --> Components[components/<br/>React Components]
+    Root --> Lib[lib/<br/>Utilities]
+    Root --> Prisma[prisma/<br/>Database]
+    Root --> Public[public/<br/>Static Files]
+    Root --> Styles[styles/<br/>CSS]
+    Root --> Types[types/<br/>TypeScript Types]
+    Root --> Hooks[hooks/<br/>React Hooks]
+    Root --> Docs[docs/<br/>Documentation]
+    
+    App --> AppPages[app/app/<br/>Protected Pages]
+    App --> AuthPages[app/auth/<br/>Auth Pages]
+    App --> APIRoutes[app/api/<br/>API Endpoints]
+    
+    Components --> UI[components/ui/<br/>Base UI Components]
+    Components --> Forms[components/forms/<br/>Form Components]
+    Components --> Charts[components/charts/<br/>Chart Components]
+    Components --> Website[components/website-components/<br/>Site Components]
+    
+    Lib --> AuthLib[lib/auth.ts<br/>NextAuth Config]
+    Lib --> DBLib[lib/db.ts<br/>Prisma Client]
+    Lib --> Validations[lib/validations/<br/>Zod Schemas]
+    
+    Prisma --> Schema[prisma/schema.prisma<br/>Database Schema]
+    Prisma --> Migrations[prisma/migrations/<br/>Database Migrations]
+    Prisma --> Seed[prisma/seed.ts<br/>Seed Data]
+    
+    style Root fill:#e3f2fd
+    style App fill:#fff3e0
+    style Components fill:#e8f5e9
+    style Lib fill:#f3e5f5
+    style Prisma fill:#e0f2f1
+```
+
+### Directory Purpose Table
+
+For beginners, here's what each folder does:
+
+| Directory | Purpose | What Goes Here | Example Files |
+|-----------|---------|----------------|---------------|
+| **`app/`** | Next.js pages and API routes | All pages and API endpoints | `app/page.tsx`, `app/api/users/route.ts` |
+| **`components/`** | Reusable React components | UI components, forms, charts | `components/ui/button.tsx` |
+| **`lib/`** | Utility functions and configs | Helper functions, configurations | `lib/db.ts`, `lib/auth.ts` |
+| **`prisma/`** | Database definition | Schema, migrations, seed data | `prisma/schema.prisma` |
+| **`public/`** | Static files | Images, fonts, robots.txt | `public/logo.png` |
+| **`styles/`** | Global CSS | Global styles, Tailwind imports | `styles/globals.css` |
+| **`types/`** | TypeScript definitions | Type declarations | `types/next-auth.d.ts` |
+| **`hooks/`** | Custom React hooks | Reusable hooks | `hooks/use-session-validator.ts` |
+| **`tests/`** | Test files | Unit tests, integration tests | `tests/state-machine.test.ts` |
+| **`docs/`** | Documentation | Markdown documentation files | `docs/01-getting-started.md` |
+| **`uploads/`** | User-uploaded files | Files uploaded by users | `uploads/avatars/user-1.jpg` |
+| **`scripts/`** | Utility scripts | Helper scripts for maintenance | `scripts/fix-admin-password.ts` |
 
 ## 📁 Detailed Directory Breakdown
 

@@ -13,23 +13,116 @@ The application uses NextAuth.js v4 for authentication with:
 
 ## 🏗️ Authentication Architecture
 
-### Authentication Flow
+### Complete Authentication Flow
 
+Here's a comprehensive view of how authentication works from registration to accessing protected routes:
+
+```mermaid
+flowchart TD
+    Start([User Wants to Access App]) --> Register{New User?}
+    
+    Register -->|Yes| Signup[1. Sign Up Form]
+    Register -->|No| Signin[2. Sign In Form]
+    
+    Signup --> ValidateSignup[3. Validate Input<br/>Email, Password, Username]
+    ValidateSignup -->|Invalid| ShowError1[Show Validation Errors]
+    ShowError1 --> Signup
+    
+    ValidateSignup -->|Valid| HashPassword[4. Hash Password<br/>with bcrypt]
+    HashPassword --> CreateUser[5. Create User Record<br/>emailVerified = null]
+    CreateUser --> GenerateToken[6. Generate Verification Token]
+    GenerateToken --> SendEmail[7. Send Verification Email]
+    SendEmail --> EmailSent[8. Email Sent Successfully]
+    EmailSent --> CheckEmail[9. User Checks Email]
+    
+    CheckEmail --> ClickLink[10. Click Verification Link]
+    ClickLink --> VerifyToken[11. Verify Token Valid & Not Expired]
+    VerifyToken -->|Invalid| Expired[Token Expired<br/>Request New One]
+    Expired --> CheckEmail
+    
+    VerifyToken -->|Valid| UpdateUser[12. Set emailVerified = now]
+    UpdateUser --> RedirectSignin[13. Redirect to Sign In]
+    
+    Signin --> ValidateCredentials[14. Validate Credentials<br/>Username/Email + Password]
+    ValidateCredentials -->|Invalid| ShowError2[Show Invalid Credentials]
+    ShowError2 --> Signin
+    
+    ValidateCredentials -->|Valid| CheckVerified{Email Verified?}
+    CheckVerified -->|No| PromptVerify[Prompt to Verify Email]
+    PromptVerify --> CheckEmail
+    
+    CheckVerified -->|Yes| CreateSession[15. Create JWT Session]
+    CreateSession --> SetCookie[16. Set Secure Cookie]
+    SetCookie --> RedirectDashboard[17. Redirect to Dashboard]
+    
+    RedirectDashboard --> AccessRoute[18. Access Protected Route]
+    AccessRoute --> MiddlewareCheck[19. Middleware Checks Session]
+    
+    MiddlewareCheck -->|No Session| RedirectSignin
+    MiddlewareCheck -->|Session Valid| AllowAccess[20. Allow Access]
+    AllowAccess --> RenderPage[21. Render Protected Page]
+    
+    style Signup fill:#e3f2fd
+    style Signin fill:#e3f2fd
+    style CreateSession fill:#c8e6c9
+    style AllowAccess fill:#c8e6c9
+    style ShowError1 fill:#ffcdd2
+    style ShowError2 fill:#ffcdd2
+    style Expired fill:#ffcdd2
 ```
-User Registration
-    ↓
-Email Verification (Required)
-    ↓
-Login with Credentials
-    ↓
-Session Creation (JWT)
-    ↓
-Protected Routes Access
-    ↓
-Session Validation (Middleware)
-    ↓
-Access Granted/Denied
+
+### Authentication States Diagram
+
+Understanding the different states a user can be in:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Guest: User Arrives
+    
+    Guest --> Registering: Click Sign Up
+    Registering --> Registered: Form Submitted Successfully
+    Registered --> Unverified: Email Sent
+    Unverified --> Verified: Email Verified
+    Unverified --> Unverified: Token Expired (24h)
+    
+    Guest --> LoggingIn: Click Sign In
+    LoggingIn --> Authenticated: Credentials Valid + Verified
+    LoggingIn --> Guest: Invalid Credentials
+    
+    Verified --> Authenticated: Sign In Successfully
+    Authenticated --> Authenticated: Accessing Protected Routes
+    Authenticated --> LoggedOut: Click Logout
+    LoggedOut --> Guest: Session Cleared
+    
+    Authenticated --> SessionExpired: Token Expired (30 days)
+    SessionExpired --> Guest: Redirect to Sign In
 ```
+
+### Key Authentication Concepts
+
+For beginners, here's what you need to understand:
+
+#### 1. **JWT (JSON Web Token)**
+   - **What it is**: A secure way to store user information (like ID, email, role)
+   - **Where it's stored**: In an HTTP-only cookie (can't be accessed by JavaScript, more secure)
+   - **Lifespan**: 30 days in this application
+   - **Contains**: User ID, email, role, profile image URL
+
+#### 2. **Password Hashing**
+   - **Why**: Never store passwords in plain text (security risk)
+   - **How**: Use bcrypt to create a "hash" (one-way encryption)
+   - **Comparison**: When user logs in, we hash their entered password and compare it to the stored hash
+   - **Salt**: bcrypt automatically adds "salt" (random data) for extra security
+
+#### 3. **Email Verification**
+   - **Why**: Ensure users have access to their email (prevent fake accounts)
+   - **How**: Send a unique token via email, user clicks link, we verify the token
+   - **Expiration**: Tokens expire after 24 hours for security
+
+#### 4. **Middleware Protection**
+   - **What**: Code that runs before each request reaches your page/API
+   - **Purpose**: Check if user is logged in before allowing access
+   - **Action**: Redirect to login if not authenticated
 
 ### Components
 
@@ -106,13 +199,68 @@ NEXTAUTH_URL="http://localhost:3000"
 
 **Endpoint**: `POST /api/auth/signup`
 
-**Flow**:
-1. Validate input (email, password, username)
-2. Hash password with bcrypt
-3. Create user (emailVerified = null)
-4. Generate verification token
-5. Send verification email
-6. Return success
+**Purpose**: Allows new users to create an account
+
+**Step-by-Step Flow**:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Form
+    participant API
+    participant Zod
+    participant bcrypt
+    participant Database
+    participant TokenGen
+    participant EmailService
+    
+    User->>Form: Fills Sign Up Form
+    Form->>API: POST /api/auth/signup<br/>{email, password, username}
+    API->>Zod: Validate Input Schema
+    Zod-->>API: Validation Result
+    
+    alt Validation Fails
+        API-->>Form: 400 Bad Request<br/>{errors: [...]}
+        Form-->>User: Display Errors
+    else Validation Passes
+        API->>Database: Check if Email/Username Exists
+        Database-->>API: User Exists?
+        
+        alt User Already Exists
+            API-->>Form: 409 Conflict<br/>{error: "Email/Username taken"}
+            Form-->>User: Show Error Message
+        else User Doesn't Exist
+            API->>bcrypt: Hash Password<br/>saltRounds: 10
+            bcrypt-->>API: Hashed Password
+            API->>Database: Create User<br/>{email, username, passwordHash, emailVerified: null}
+            Database-->>API: New User Created
+            API->>TokenGen: Generate Verification Token<br/>Random String + Expiry
+            TokenGen-->>API: Token + Expiry Date
+            API->>Database: Store Verification Token
+            API->>EmailService: Send Verification Email<br/>{email, token}
+            EmailService-->>API: Email Sent
+            API-->>Form: 201 Created<br/>{message: "Check your email"}
+            Form-->>User: Success Message
+        end
+    end
+```
+
+**Registration Steps Table**:
+
+| Step | Action | Code Location | Why It's Important |
+|------|--------|---------------|-------------------|
+| 1 | Validate Input | `lib/validations/auth.ts` | Prevent invalid data, ensure security |
+| 2 | Check Duplicates | API route | Prevent duplicate accounts |
+| 3 | Hash Password | API route with bcrypt | Security - never store plain passwords |
+| 4 | Create User | `prisma.user.create()` | Save user to database |
+| 5 | Generate Token | API route | Unique identifier for email verification |
+| 6 | Send Email | `lib/email.ts` | Verify user owns the email address |
+
+**Important Notes for Beginners**:
+- ✅ User cannot login until email is verified (`emailVerified` must be set)
+- ✅ Password is hashed using bcrypt with 10 salt rounds (industry standard)
+- ✅ Token expires after 24 hours (security measure)
+- ✅ Token is single-use (deleted after verification)
 
 **Code Example**:
 ```typescript

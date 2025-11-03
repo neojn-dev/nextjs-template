@@ -6,6 +6,23 @@ This document explains the database architecture, Prisma ORM setup, schema desig
 
 The application uses **MySQL** with **Prisma ORM** for type-safe database access.
 
+### What is an ORM?
+
+**ORM** stands for **Object-Relational Mapping**. For beginners, think of it this way:
+
+| Traditional Way | ORM Way |
+|----------------|---------|
+| Write SQL queries manually | Write code that looks like JavaScript/TypeScript |
+| `SELECT * FROM users WHERE email = ?` | `db.user.findMany({ where: { email } })` |
+| Type errors found at runtime | Type errors found at compile time |
+| Hard to maintain | Easy to maintain |
+
+**Benefits of Prisma**:
+- ✅ **Type Safety**: Your code editor knows what fields exist
+- ✅ **Auto-completion**: IDE suggests available fields and methods
+- ✅ **Migrations**: Changes to database structure are versioned
+- ✅ **Relations**: Easy to work with related data (e.g., user's role)
+
 ## 📊 Database Technology Stack
 
 | Component | Technology | Purpose |
@@ -35,17 +52,92 @@ prisma/
 
 **Location**: `prisma/schema.prisma`
 
+**What is a Schema?**
+A schema is like a blueprint for your database. It defines:
+- What tables exist (models in Prisma)
+- What columns each table has (fields)
+- How tables relate to each other (relations)
+- What types of data are stored (String, Int, DateTime, etc.)
+
 **Configuration**:
 ```prisma
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider = "mysql"        // Database type
+  url      = env("DATABASE_URL")  // Connection string from .env
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js"  // Generate TypeScript client
 }
 ```
+
+### Database Relationships Diagram
+
+Understanding how different tables connect to each other:
+
+```mermaid
+erDiagram
+    User ||--o{ Session : has
+    User ||--o{ Account : has
+    User ||--o{ VerificationToken : has
+    User ||--o{ PasswordResetToken : has
+    User }o--|| Role : belongs_to
+    User ||--o{ TransferRequest : creates
+    User ||--o{ TransferRequest : supervises
+    User ||--o{ TransferRequest : manages
+    User ||--o{ Upload : uploads
+    User ||--o{ ApprovalStep : approves
+    
+    Role ||--o{ User : assigned_to
+    
+    TransferRequest ||--o{ ApprovalStep : has
+    TransferRequest ||--o{ TransferAttachment : has
+    TransferRequest ||--o{ TransferComment : has
+    
+    Upload ||--o{ TransferAttachment : used_in
+    
+    User {
+        string id PK
+        string username UK
+        string email UK
+        string passwordHash
+        string roleId FK
+        datetime emailVerified
+        boolean isActive
+    }
+    
+    Role {
+        string id PK
+        string name UK
+        string description
+        boolean isActive
+    }
+    
+    TransferRequest {
+        string id PK
+        string createdById FK
+        string supervisorId FK
+        string managerId FK
+        string title
+        string status
+    }
+    
+    Doctor {
+        string id PK
+        string email UK
+        string employeeId UK
+        string department
+    }
+```
+
+**Relationship Types Explained**:
+
+| Symbol | Relationship Type | Meaning | Example |
+|--------|------------------|---------|---------|
+| `||--o{` | One-to-Many | One parent, many children | One User has many Sessions |
+| `}o--||` | Many-to-One | Many children, one parent | Many Users belong to one Role |
+| `||--||` | One-to-One | One-to-one relationship | One User has one Profile (if existed) |
+| `}o--o{` | Many-to-Many | Many-to-many relationship | Users and Permissions (if existed) |
 
 ### Core Models
 

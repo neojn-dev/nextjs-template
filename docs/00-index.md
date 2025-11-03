@@ -47,26 +47,82 @@ This documentation is organized into several sections, each covering different a
 
 ## 🎯 Quick Navigation
 
-### For Beginners
-Start here:
-1. [Getting Started](./01-getting-started.md)
-2. [Project Overview](./02-project-overview.md)
-3. [Project Structure](./04-project-structure.md)
-4. [Architecture](./03-architecture.md)
+### 📖 Learning Path for Beginners
 
-### For Developers
-Essential reading:
-1. [Authentication System](./06-authentication.md)
-2. [Database & Prisma](./07-database.md)
-3. [API Routes](./08-api-routes.md)
-4. [Components Overview](./09-components-overview.md)
+If you're new to this project, follow this recommended reading order:
 
-### For Advanced Users
-Deep dives:
-1. [Workflows System](./13-workflows.md)
-2. [File Management](./14-file-management.md)
-3. [Security](./21-security.md)
-4. [Deployment](./22-deployment.md)
+#### Week 1: Foundation
+1. **[Getting Started](./01-getting-started.md)** - Set up your development environment
+   - **Time**: 30-60 minutes
+   - **What you'll learn**: How to install and run the project
+   
+2. **[Project Overview](./02-project-overview.md)** - Understand what this project does
+   - **Time**: 20 minutes
+   - **What you'll learn**: Features, architecture, and use cases
+
+3. **[Project Structure](./04-project-structure.md)** - Explore the codebase
+   - **Time**: 30 minutes
+   - **What you'll learn**: Where files are located and organized
+
+#### Week 2: Core Concepts
+4. **[Architecture](./03-architecture.md)** - Learn how everything connects
+   - **Time**: 45 minutes
+   - **What you'll learn**: Design patterns, data flow, system architecture
+
+5. **[Routing](./05-routing.md)** - Understand Next.js routing
+   - **Time**: 30 minutes
+   - **What you'll learn**: How pages and routes work
+
+6. **[Authentication System](./06-authentication.md)** - Learn about user authentication
+   - **Time**: 45 minutes
+   - **What you'll learn**: Login, signup, password reset, sessions
+
+#### Week 3: Data & APIs
+7. **[Database & Prisma](./07-database.md)** - Work with the database
+   - **Time**: 60 minutes
+   - **What you'll learn**: Database schema, Prisma ORM, queries
+
+8. **[API Routes](./08-api-routes.md)** - Create backend endpoints
+   - **Time**: 45 minutes
+   - **What you'll learn**: API design, request handling, validation
+
+#### Week 4: Frontend
+9. **[Components Overview](./09-components-overview.md)** - Reusable components
+   - **Time**: 45 minutes
+   - **What you'll learn**: Component architecture, composition
+
+10. **[UI Components](./10-ui-components.md)** - shadcn/ui components
+    - **Time**: 30 minutes
+    - **What you'll learn**: Available UI components and usage
+
+11. **[Forms & Validation](./11-forms-validation.md)** - Build forms
+    - **Time**: 45 minutes
+    - **What you'll learn**: Form handling, Zod validation, React Hook Form
+
+### 🚀 Quick Reference for Experienced Developers
+
+| Topic | Document | Key Concepts |
+|-------|----------|--------------|
+| **Setup** | [Getting Started](./01-getting-started.md) | Installation, environment setup |
+| **Architecture** | [Architecture](./03-architecture.md) | Design patterns, data flow |
+| **Auth** | [Authentication](./06-authentication.md) | NextAuth.js, sessions, RBAC |
+| **Database** | [Database](./07-database.md) | Prisma, schema, migrations |
+| **APIs** | [API Routes](./08-api-routes.md) | Route handlers, validation |
+| **Components** | [Components](./09-components-overview.md) | React components, composition |
+| **Forms** | [Forms](./11-forms-validation.md) | React Hook Form, Zod |
+
+### 🔬 Deep Dives for Advanced Users
+
+Advanced topics for experienced developers:
+
+| Document | Focus Area | Complexity |
+|----------|-----------|------------|
+| [Workflows System](./13-workflows.md) | State machines, approval flows | Advanced |
+| [File Management](./14-file-management.md) | File uploads, storage, validation | Intermediate |
+| [Dashboard Analytics](./15-dashboard-analytics.md) | Data visualization, charts | Intermediate |
+| [Security](./21-security.md) | Security best practices | Advanced |
+| [Deployment](./22-deployment.md) | Production deployment | Advanced |
+| [Troubleshooting](./23-troubleshooting.md) | Common issues, debugging | All Levels |
 
 ## 📋 Documentation Format
 
@@ -81,17 +137,107 @@ Each documentation file follows a consistent structure:
 
 ## 🛠️ Technology Stack
 
-This project uses:
-- **Framework**: Next.js 15.5 (App Router)
-- **Language**: TypeScript
-- **Database**: MySQL with Prisma ORM
-- **Authentication**: NextAuth.js v4
-- **UI Components**: shadcn/ui (Radix UI + TailwindCSS)
-- **Forms**: React Hook Form + Zod
-- **Tables**: TanStack Table
-- **Charts**: Recharts
-- **Animations**: Framer Motion
-- **Styling**: TailwindCSS
+This project uses a modern, full-stack technology stack. Here's a comprehensive breakdown:
+
+### Frontend Technologies
+
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Next.js** | 15.5 | React framework with App Router | [Next.js Docs](https://nextjs.org/docs) |
+| **TypeScript** | 5.9 | Type-safe JavaScript | [TypeScript Docs](https://www.typescriptlang.org/docs) |
+| **React** | 18 | UI library | [React Docs](https://react.dev) |
+| **TailwindCSS** | 3.3 | Utility-first CSS framework | [TailwindCSS Docs](https://tailwindcss.com/docs) |
+| **shadcn/ui** | Latest | Pre-built accessible components | [shadcn/ui](https://ui.shadcn.com) |
+| **Framer Motion** | 10.18 | Animation library | [Framer Motion Docs](https://www.framer.com/motion) |
+| **Recharts** | 3.1 | Chart library | [Recharts Docs](https://recharts.org) |
+| **TanStack Table** | 8.11 | Data table library | [TanStack Table Docs](https://tanstack.com/table) |
+
+### Backend Technologies
+
+| Technology | Version | Purpose | Documentation |
+|------------|---------|---------|---------------|
+| **Next.js API Routes** | Built-in | Server-side API endpoints | [Next.js API Docs](https://nextjs.org/docs/app/building-your-application/routing/route-handlers) |
+| **Prisma** | 5.8 | Database ORM | [Prisma Docs](https://www.prisma.io/docs) |
+| **NextAuth.js** | 4.24 | Authentication library | [NextAuth.js Docs](https://next-auth.js.org) |
+| **bcryptjs** | 2.4 | Password hashing | [bcryptjs](https://github.com/dcodeIO/bcrypt.js) |
+| **Zod** | 3.22 | Schema validation | [Zod Docs](https://zod.dev) |
+| **nodemailer** | 6.9 | Email sending | [nodemailer Docs](https://nodemailer.com) |
+
+### Database
+
+| Technology | Purpose | Documentation |
+|------------|---------|---------------|
+| **MySQL** | Relational database | [MySQL Docs](https://dev.mysql.com/doc) |
+| **Prisma Client** | Type-safe database client | [Prisma Client Docs](https://www.prisma.io/docs/concepts/components/prisma-client) |
+
+### Form & Validation
+
+| Technology | Purpose |
+|------------|---------|
+| **React Hook Form** | Form state management |
+| **Zod** | Schema validation |
+
+## 🏗️ System Architecture Diagram
+
+Here's a visual representation of how the different parts of the system work together:
+
+```mermaid
+graph TB
+    subgraph "Client (Browser)"
+        UI[React UI Components]
+        Forms[Forms with Validation]
+        Charts[Charts & Analytics]
+    end
+    
+    subgraph "Next.js Server"
+        Pages[App Router Pages]
+        API[API Routes]
+        MW[Middleware]
+        Auth[NextAuth.js]
+    end
+    
+    subgraph "Business Logic"
+        Validation[Zod Validation]
+        Email[Email Service]
+        Files[File Manager]
+        Workflows[Workflow Engine]
+    end
+    
+    subgraph "Data Layer"
+        Prisma[Prisma ORM]
+        DB[(MySQL Database)]
+    end
+    
+    UI --> Pages
+    Forms --> API
+    Charts --> API
+    Pages --> MW
+    API --> MW
+    MW --> Auth
+    API --> Validation
+    API --> Email
+    API --> Files
+    API --> Workflows
+    Validation --> Prisma
+    Email --> Prisma
+    Files --> Prisma
+    Workflows --> Prisma
+    Prisma --> DB
+    
+    style UI fill:#e1f5ff
+    style Forms fill:#e1f5ff
+    style Charts fill:#e1f5ff
+    style Pages fill:#fff4e1
+    style API fill:#fff4e1
+    style MW fill:#fff4e1
+    style Auth fill:#fff4e1
+    style Validation fill:#f0f9ff
+    style Email fill:#f0f9ff
+    style Files fill:#f0f9ff
+    style Workflows fill:#f0f9ff
+    style Prisma fill:#e8f5e9
+    style DB fill:#e8f5e9
+```
 
 ## 📝 Contributing to Documentation
 
