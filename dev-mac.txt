@@ -1,0 +1,425 @@
+================================================================================
+                    NEXTJS TEMPLATE APP - MACOS SETUP GUIDE
+================================================================================
+
+This guide contains all environment parameters and commands needed for macOS
+development setup.
+
+================================================================================
+                         ENVIRONMENT VARIABLES (.env)
+================================================================================
+
+Create a file named .env in the root directory with the following variables:
+
+# Database Configuration
+DATABASE_URL="mysql://username:password@localhost:3306/next_template_db"
+# Replace username, password, and database name with your MySQL credentials
+# Example: DATABASE_URL="mysql://root:mypassword@localhost:3306/next_template_db"
+
+# NextAuth Configuration (REQUIRED)
+NEXTAUTH_SECRET="your-secret-key-here-change-this-in-production"
+# Generate a secure secret: openssl rand -base64 32
+NEXTAUTH_URL="http://localhost:3000"
+
+# Email Configuration (SMTP)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+# For Gmail: Enable 2FA and generate an App Password
+FROM_EMAIL="your-email@gmail.com"
+
+# App Settings
+APP_NAME="NextJS Template App"
+APP_URL="http://localhost:3000"
+
+# Feature Flags (Optional)
+ENABLE_WORKFLOWS="true"
+
+================================================================================
+                         PREREQUISITES INSTALLATION
+================================================================================
+
+1. Install Homebrew (if not installed):
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+2. Install Node.js (18.17 or later):
+   brew install node@18
+   # Or use nvm:
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+   nvm install 18
+   nvm use 18
+
+3. Install MySQL:
+   brew install mysql
+   brew services start mysql
+   # Set root password:
+   mysql_secure_installation
+
+4. Install Git (if not installed):
+   brew install git
+
+5. Verify installations:
+   node --version    # Should be 18.17.0 or higher
+   npm --version    # Should be 9.0.0 or higher
+   mysql --version  # Should show MySQL 8.0 or higher
+   git --version    # Should show Git 2.30 or higher
+
+================================================================================
+                         INITIAL SETUP COMMANDS
+================================================================================
+
+# 1. Clone the repository (if not already cloned)
+git clone <repository-url> nextjs-template
+cd nextjs-template
+
+# 2. Install dependencies
+npm install
+
+# 3. Create .env file from template
+cp .env.example .env
+
+# 4. Edit .env file with your settings
+nano .env
+# Or use your preferred editor:
+# code .env
+# vim .env
+
+# 5. Generate Prisma Client
+npm run db:generate
+
+# 6. Create MySQL database
+mysql -u root -p
+# In MySQL prompt:
+CREATE DATABASE next_template_db;
+EXIT;
+
+# 7. Run database migrations
+npm run db:migrate
+
+# 8. Seed the database with sample data
+npm run db:seed
+
+================================================================================
+                         DEVELOPMENT COMMANDS
+================================================================================
+
+# Start development server
+npm run dev
+# Server runs on http://localhost:3000
+
+# Start development server with debugging enabled
+npm run dev:debug
+# Attach Chrome DevTools at chrome://inspect
+
+# Start development server with break on start
+npm run dev:debug-brk
+# Pauses immediately for debugging
+
+# Start development server with remote debugging
+npm run dev:debug-remote
+# For Docker/container debugging
+
+# Start development server with verbose logging
+npm run dev:debug-verbose
+
+================================================================================
+                         DATABASE COMMANDS
+================================================================================
+
+# Generate Prisma Client (after schema changes)
+npm run db:generate
+# Or: npx prisma generate
+
+# Create and apply migration
+npm run db:migrate
+# Or: npx prisma migrate dev
+
+# Create migration with custom name
+npx prisma migrate dev --name migration_name
+
+# Reset database (WARNING: deletes all data)
+npm run db:reset
+# Or: npx prisma migrate reset
+
+# Seed database with sample data
+npm run db:seed
+# Or: npx prisma db seed
+
+# Open Prisma Studio (database GUI)
+npm run db:studio
+# Or: npx prisma studio
+# Opens at http://localhost:5555
+
+# Push schema changes without migration (development only)
+npx prisma db push
+
+# Check migration status
+npx prisma migrate status
+
+# Format Prisma schema
+npx prisma format
+
+================================================================================
+                         BUILD & PRODUCTION COMMANDS
+================================================================================
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Start production server with debugging
+npm run start:debug
+
+# Type checking (TypeScript)
+npm run type-check
+# Or: npx tsc --noEmit
+
+# Run linter
+npm run lint
+
+# Run tests
+npm test
+# Or: npm run test
+
+================================================================================
+                         QUICK SETUP SCRIPT (MACOS)
+================================================================================
+
+# Use the automated setup script:
+chmod +x setup-and-run.sh
+./setup-and-run.sh
+
+# This script will:
+# - Check prerequisites
+# - Install dependencies
+# - Set up environment
+# - Initialize database
+# - Seed database
+# - Start development server
+
+================================================================================
+                         MYSQL COMMANDS (MACOS)
+================================================================================
+
+# Start MySQL service
+brew services start mysql
+
+# Stop MySQL service
+brew services stop mysql
+
+# Restart MySQL service
+brew services restart mysql
+
+# Check MySQL status
+brew services list | grep mysql
+
+# Connect to MySQL
+mysql -u root -p
+# Or with specific database:
+mysql -u root -p next_template_db
+
+# Create database manually
+mysql -u root -p -e "CREATE DATABASE next_template_db;"
+
+# Drop database (WARNING: deletes all data)
+mysql -u root -p -e "DROP DATABASE next_template_db;"
+
+# Import SQL file
+mysql -u root -p next_template_db < file.sql
+
+# Export database
+mysqldump -u root -p next_template_db > backup.sql
+
+================================================================================
+                         TROUBLESHOOTING COMMANDS
+================================================================================
+
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Clear Next.js cache
+rm -rf .next
+npm run dev
+
+# Check for port conflicts
+lsof -ti:3000
+# Kill process on port 3000:
+lsof -ti:3000 | xargs kill
+
+# Check MySQL connection
+mysql -u root -p -e "SELECT 1;"
+
+# Check MySQL users
+mysql -u root -p -e "SELECT user, host FROM mysql.user;"
+
+# Reset MySQL root password
+mysql -u root -p
+# In MySQL:
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'newpassword';
+FLUSH PRIVILEGES;
+EXIT;
+
+================================================================================
+                         USEFUL MACOS COMMANDS
+================================================================================
+
+# Open file in default editor
+open .env
+
+# Open in VS Code
+code .
+
+# Open in specific editor
+open -a "Visual Studio Code" .
+
+# Check disk space
+df -h
+
+# Check system information
+system_profiler SPSoftwareDataType
+
+# Find files
+find . -name "*.env*"
+
+# Search in files
+grep -r "DATABASE_URL" .
+
+# Check process running on port
+lsof -i :3000
+
+# Kill process by PID
+kill -9 <PID>
+
+# Monitor logs
+tail -f /tmp/nextjs.log
+
+================================================================================
+                         GIT COMMANDS (OPTIONAL)
+================================================================================
+
+# Initialize git (if not already initialized)
+git init
+
+# Add all files
+git add .
+
+# Commit changes
+git commit -m "Initial commit"
+
+# Check status
+git status
+
+# View logs
+git log --oneline
+
+# Create branch
+git checkout -b feature-branch
+
+# Switch branch
+git checkout main
+
+================================================================================
+                         ENVIRONMENT VARIABLE EXAMPLES
+================================================================================
+
+# Development (.env)
+DATABASE_URL="mysql://root:password123@localhost:3306/next_template_db"
+NEXTAUTH_SECRET="dev-secret-key-change-in-production"
+NEXTAUTH_URL="http://localhost:3000"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="dev@example.com"
+SMTP_PASS="app-password-here"
+FROM_EMAIL="dev@example.com"
+
+# Production (.env.production)
+# Never commit production secrets!
+DATABASE_URL="mysql://user:password@production-host:3306/production_db"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+NEXTAUTH_URL="https://yourdomain.com"
+SMTP_HOST="smtp.sendgrid.net"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="apikey"
+SMTP_PASS="your-sendgrid-api-key"
+FROM_EMAIL="noreply@yourdomain.com"
+
+================================================================================
+                         TEST ACCOUNTS (After Seeding)
+================================================================================
+
+🔑 ADMIN ACCOUNT
+   Username: admin
+   Password: password123
+   Email:    admin@example.com
+   Role:     Admin
+
+👥 MANAGER ACCOUNT
+   Username: manager
+   Password: password123
+   Email:    manager@example.com
+   Role:     Manager
+
+👤 USER ACCOUNTS
+   Username: analyst
+   Password: password123
+   Email:    analyst@example.com
+   Role:     User
+
+   Username: jdoe
+   Password: password123
+   Email:    john.doe@example.com
+   Role:     User
+
+   Username: asmith
+   Password: password123
+   Email:    alice.smith@example.com
+   Role:     User
+
+================================================================================
+                         QUICK REFERENCE
+================================================================================
+
+Most Common Commands:
+  npm run dev          - Start development server
+  npm run db:generate  - Generate Prisma client
+  npm run db:migrate   - Run migrations
+  npm run db:seed      - Seed database
+  npm run db:studio    - Open Prisma Studio
+
+URLs:
+  Application:     http://localhost:3000
+  Sign In:        http://localhost:3000/signin
+  Dashboard:      http://localhost:3000/dashboard
+  Prisma Studio:  http://localhost:5555
+
+Important Files:
+  .env              - Environment variables (DO NOT COMMIT!)
+  .env.example      - Environment template
+  package.json      - Dependencies and scripts
+  prisma/schema.prisma - Database schema
+
+================================================================================
+                         NOTES
+================================================================================
+
+- Always keep .env file secret - never commit it to git
+- Use .env.example as a template for other developers
+- Generate a new NEXTAUTH_SECRET for production
+- MySQL must be running before starting the app
+- Port 3000 must be available for the dev server
+- Port 5555 must be available for Prisma Studio
+
+For detailed documentation, see: docs/01-getting-started.md
+
+================================================================================
+

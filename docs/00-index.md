@@ -45,6 +45,17 @@ This documentation is organized into several sections, each covering different a
 - **[22-deployment.md](./22-deployment.md)** - Deployment guide and production considerations
 - **[23-troubleshooting.md](./23-troubleshooting.md)** - Common issues and solutions
 
+### Code Walkthroughs (Detailed Code Examples)
+- **[24-code-walkthrough-pages.md](./24-code-walkthrough-pages.md)** - How pages work with real code examples
+- **[25-code-walkthrough-api.md](./25-code-walkthrough-api.md)** - How API routes work with real code examples
+- **[26-code-walkthrough-components.md](./26-code-walkthrough-components.md)** - How components work with real code examples
+- **[27-code-walkthrough-database.md](./27-code-walkthrough-database.md)** - How database queries work with real code examples
+
+### File & Folder Reference
+- **[28-files-folders-interactions.md](./28-files-folders-interactions.md)** - Complete guide to all files and folders, their interactions, and when they're used
+- **[29-files-quick-reference.md](./29-files-quick-reference.md)** - Quick reference for file relationships and where to find things
+- **[30-file-interactions-examples.md](./30-file-interactions-examples.md)** - Real code examples showing how files interact
+
 ## 🎯 Quick Navigation
 
 ### 📖 Learning Path for Beginners
@@ -111,6 +122,24 @@ If you're new to this project, follow this recommended reading order:
 | **Components** | [Components](./09-components-overview.md) | React components, composition |
 | **Forms** | [Forms](./11-forms-validation.md) | React Hook Form, Zod |
 
+### 📚 Code Walkthroughs (Must Read for New Developers!)
+
+These detailed code walkthroughs explain **exactly how code works** with real examples:
+
+| Document | What You'll Learn | Time |
+|----------|------------------|------|
+| **[Code Walkthrough: Authentication](./24-code-walkthrough-authentication.md)** | Step-by-step guide through registration, login, sessions | 60 min |
+| **[Code Walkthrough: API Routes](./25-code-walkthrough-api-routes.md)** | Complete CRUD API implementation with real code | 45 min |
+
+**Why These Are Important:**
+- ✅ See actual code from the codebase
+- ✅ Line-by-line explanations
+- ✅ Understand how files connect
+- ✅ Trace complete flows
+- ✅ Learn patterns used throughout the app
+
+**Start Here If:** You want to understand the code, not just the concepts!
+
 ### 🔬 Deep Dives for Advanced Users
 
 Advanced topics for experienced developers:
@@ -123,6 +152,20 @@ Advanced topics for experienced developers:
 | [Security](./21-security.md) | Security best practices | Advanced |
 | [Deployment](./22-deployment.md) | Production deployment | Advanced |
 | [Troubleshooting](./23-troubleshooting.md) | Common issues, debugging | All Levels |
+
+### 💻 Code Walkthroughs (NEW!)
+
+**Essential for understanding how the code actually works:**
+
+| Document | What You'll Learn | Real Examples |
+|----------|------------------|---------------|
+| [Code Walkthrough: Pages](./24-code-walkthrough-pages.md) | How pages fetch data, handle forms, manage state | Doctors page breakdown |
+| [Code Walkthrough: API Routes](./25-code-walkthrough-api.md) | How APIs validate, query database, return responses | Doctors API breakdown |
+| [Code Walkthrough: Components](./26-code-walkthrough-components.md) | How reusable components work, TanStack Table | DataTable component |
+| [Code Walkthrough: Database](./27-code-walkthrough-database.md) | How Prisma queries work, relations, transactions | Real query examples |
+| [Files & Folders Guide](./28-files-folders-interactions.md) | Complete reference to all files, their interactions, and usage | File dependency maps |
+
+**Start here if you want to understand the actual code!**
 
 ## 📋 Documentation Format
 

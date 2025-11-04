@@ -1,0 +1,591 @@
+================================================================================
+                  NEXTJS TEMPLATE APP - WINDOWS SETUP GUIDE
+================================================================================
+
+This guide contains all environment parameters and commands needed for Windows
+development setup.
+
+================================================================================
+                         ENVIRONMENT VARIABLES (.env)
+================================================================================
+
+Create a file named .env in the root directory with the following variables:
+
+# Database Configuration
+DATABASE_URL="mysql://username:password@localhost:3306/next_template_db"
+# Replace username, password, and database name with your MySQL credentials
+# Example: DATABASE_URL="mysql://root:mypassword@localhost:3306/next_template_db"
+
+# NextAuth Configuration (REQUIRED)
+NEXTAUTH_SECRET="your-secret-key-here-change-this-in-production"
+# Generate a secure secret using PowerShell:
+# [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Guid]::NewGuid().ToString() + [System.Guid]::NewGuid().ToString()))
+NEXTAUTH_URL="http://localhost:3000"
+
+# Email Configuration (SMTP)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+# For Gmail: Enable 2FA and generate an App Password
+FROM_EMAIL="your-email@gmail.com"
+
+# App Settings
+APP_NAME="NextJS Template App"
+APP_URL="http://localhost:3000"
+
+# Feature Flags (Optional)
+ENABLE_WORKFLOWS="true"
+
+================================================================================
+                         PREREQUISITES INSTALLATION
+================================================================================
+
+1. Install Node.js (18.17 or later):
+   - Download from: https://nodejs.org/
+   - Run installer and follow prompts
+   - Verify installation:
+     node --version
+     npm --version
+
+2. Install MySQL:
+   - Download from: https://dev.mysql.com/downloads/mysql/
+   - Run installer (mysql-installer-web-community-8.0.x.msi)
+   - Choose "Developer Default" setup type
+   - Complete installation with default options
+   - Set MySQL root password (remember it!)
+   - Verify installation:
+     mysql --version
+
+3. Install Git (if not installed):
+   - Download from: https://git-scm.com/download/win
+   - Run installer with default options
+   - Verify installation:
+     git --version
+
+4. Install VS Code (Recommended):
+   - Download from: https://code.visualstudio.com/
+   - Install recommended extensions:
+     - Prisma
+     - ESLint
+     - Prettier
+     - Tailwind CSS IntelliSense
+
+5. Verify all installations:
+   node --version    # Should be 18.17.0 or higher
+   npm --version    # Should be 9.0.0 or higher
+   mysql --version  # Should show MySQL 8.0 or higher
+   git --version    # Should show Git 2.30 or higher
+
+================================================================================
+                         INITIAL SETUP COMMANDS
+================================================================================
+
+# Open PowerShell or Command Prompt as Administrator
+
+# 1. Navigate to project directory
+cd C:\path\to\nextjs-template
+
+# 2. Clone the repository (if not already cloned)
+git clone <repository-url> nextjs-template
+cd nextjs-template
+
+# 3. Install dependencies
+npm install
+
+# 4. Create .env file from template
+copy .env.example .env
+# Or in PowerShell:
+Copy-Item .env.example .env
+
+# 5. Edit .env file with your settings
+notepad .env
+# Or use VS Code:
+code .env
+
+# 6. Generate Prisma Client
+npm run db:generate
+
+# 7. Start MySQL service (if not running)
+# Open Services (services.msc) or use PowerShell:
+Start-Service -Name "MySQL80"
+# Or:
+net start MySQL80
+
+# 8. Create MySQL database
+mysql -u root -p
+# In MySQL prompt:
+CREATE DATABASE next_template_db;
+EXIT;
+
+# 9. Run database migrations
+npm run db:migrate
+
+# 10. Seed the database with sample data
+npm run db:seed
+
+================================================================================
+                         DEVELOPMENT COMMANDS
+================================================================================
+
+# Start development server
+npm run dev
+# Server runs on http://localhost:3000
+
+# Start development server with debugging enabled
+npm run dev:debug
+# Attach Chrome DevTools at chrome://inspect
+
+# Start development server with break on start
+npm run dev:debug-brk
+# Pauses immediately for debugging
+
+# Start development server with remote debugging
+npm run dev:debug-remote
+# For Docker/container debugging
+
+# Start development server with verbose logging
+npm run dev:debug-verbose
+
+================================================================================
+                         DATABASE COMMANDS
+================================================================================
+
+# Generate Prisma Client (after schema changes)
+npm run db:generate
+# Or: npx prisma generate
+
+# Create and apply migration
+npm run db:migrate
+# Or: npx prisma migrate dev
+
+# Create migration with custom name
+npx prisma migrate dev --name migration_name
+
+# Reset database (WARNING: deletes all data)
+npm run db:reset
+# Or: npx prisma migrate reset
+
+# Seed database with sample data
+npm run db:seed
+# Or: npx prisma db seed
+
+# Open Prisma Studio (database GUI)
+npm run db:studio
+# Or: npx prisma studio
+# Opens at http://localhost:5555
+
+# Push schema changes without migration (development only)
+npx prisma db push
+
+# Check migration status
+npx prisma migrate status
+
+# Format Prisma schema
+npx prisma format
+
+================================================================================
+                         BUILD & PRODUCTION COMMANDS
+================================================================================
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Start production server with debugging
+npm run start:debug
+
+# Type checking (TypeScript)
+npm run type-check
+# Or: npx tsc --noEmit
+
+# Run linter
+npm run lint
+
+# Run tests
+npm test
+# Or: npm run test
+
+================================================================================
+                         QUICK SETUP SCRIPT (WINDOWS)
+================================================================================
+
+# Use the automated setup script (PowerShell):
+# Right-click PowerShell and select "Run as Administrator"
+
+# Navigate to project directory
+cd C:\path\to\nextjs-template
+
+# Run setup script
+.\setup-and-run.ps1
+
+# If execution policy is restricted, run:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Then run the script again:
+.\setup-and-run.ps1
+
+# This script will:
+# - Check prerequisites
+# - Start MySQL service
+# - Configure database connection
+# - Install dependencies
+# - Initialize database
+# - Seed database
+# - Start development server
+
+================================================================================
+                         MYSQL COMMANDS (WINDOWS)
+================================================================================
+
+# Start MySQL service (PowerShell as Administrator)
+Start-Service -Name "MySQL80"
+# Or Command Prompt:
+net start MySQL80
+
+# Stop MySQL service
+Stop-Service -Name "MySQL80"
+# Or:
+net stop MySQL80
+
+# Restart MySQL service
+Restart-Service -Name "MySQL80"
+# Or:
+net stop MySQL80
+net start MySQL80
+
+# Check MySQL service status
+Get-Service -Name "MySQL80"
+# Or:
+sc query MySQL80
+
+# Connect to MySQL
+mysql -u root -p
+# Or with specific database:
+mysql -u root -p next_template_db
+
+# Create database manually
+mysql -u root -p -e "CREATE DATABASE next_template_db;"
+
+# Drop database (WARNING: deletes all data)
+mysql -u root -p -e "DROP DATABASE next_template_db;"
+
+# Import SQL file
+mysql -u root -p next_template_db < file.sql
+
+# Export database
+mysqldump -u root -p next_template_db > backup.sql
+
+# Find MySQL installation path
+Get-Service -Name "MySQL80" | Select-Object -ExpandProperty DisplayName
+
+================================================================================
+                         POWERSHELL COMMANDS
+================================================================================
+
+# Check if port is in use
+Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
+
+# Kill process on port 3000
+Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process
+
+# Check Node.js version
+node --version
+
+# Check npm version
+npm --version
+
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and reinstall
+Remove-Item -Recurse -Force node_modules
+Remove-Item package-lock.json
+npm install
+
+# Clear Next.js cache
+Remove-Item -Recurse -Force .next
+npm run dev
+
+# Check MySQL connection
+mysql -u root -p -e "SELECT 1;"
+
+# Generate secure secret (PowerShell)
+[Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([System.Guid]::NewGuid().ToString() + [System.Guid]::NewGuid().ToString()))
+
+# Find files
+Get-ChildItem -Recurse -Filter "*.env*"
+
+# Search in files
+Select-String -Path "*.env" -Pattern "DATABASE_URL"
+
+# Check disk space
+Get-PSDrive C
+
+# Check system information
+Get-ComputerInfo
+
+================================================================================
+                         TROUBLESHOOTING COMMANDS
+================================================================================
+
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and reinstall
+rmdir /s node_modules
+del package-lock.json
+npm install
+
+# Clear Next.js cache
+rmdir /s .next
+npm run dev
+
+# Check for port conflicts (PowerShell)
+Get-NetTCPConnection -LocalPort 3000
+
+# Kill process on port 3000 (PowerShell)
+$process = Get-NetTCPConnection -LocalPort 3000
+Stop-Process -Id $process.OwningProcess -Force
+
+# Check MySQL connection
+mysql -u root -p -e "SELECT 1;"
+
+# Check MySQL users
+mysql -u root -p -e "SELECT user, host FROM mysql.user;"
+
+# Reset MySQL root password
+mysql -u root -p
+# In MySQL:
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'newpassword';
+FLUSH PRIVILEGES;
+EXIT;
+
+# Fix MySQL service not starting
+# Open Services (services.msc)
+# Find MySQL80 service
+# Right-click > Properties > Log On tab
+# Select "Local System account"
+# Click OK and restart service
+
+# Check Windows Firewall (if connection issues)
+# Windows Security > Firewall & network protection
+# Allow Node.js and MySQL through firewall
+
+================================================================================
+                         COMMAND PROMPT COMMANDS
+================================================================================
+
+# Navigate to directory
+cd C:\path\to\nextjs-template
+
+# List files
+dir
+
+# Create directory
+mkdir folder-name
+
+# Delete directory
+rmdir /s folder-name
+
+# Copy file
+copy file1.txt file2.txt
+
+# Move file
+move file1.txt destination\
+
+# Open file in default editor
+notepad .env
+
+# Check port (PowerShell needed)
+netstat -ano | findstr :3000
+
+# Kill process by PID
+taskkill /PID <PID> /F
+
+# Check running services
+sc query
+
+# Check MySQL service
+sc query MySQL80
+
+================================================================================
+                         GIT COMMANDS (OPTIONAL)
+================================================================================
+
+# Initialize git (if not already initialized)
+git init
+
+# Add all files
+git add .
+
+# Commit changes
+git commit -m "Initial commit"
+
+# Check status
+git status
+
+# View logs
+git log --oneline
+
+# Create branch
+git checkout -b feature-branch
+
+# Switch branch
+git checkout main
+
+# Configure Git (first time)
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+
+================================================================================
+                         ENVIRONMENT VARIABLE EXAMPLES
+================================================================================
+
+# Development (.env)
+DATABASE_URL="mysql://root:password123@localhost:3306/next_template_db"
+NEXTAUTH_SECRET="dev-secret-key-change-in-production"
+NEXTAUTH_URL="http://localhost:3000"
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="dev@example.com"
+SMTP_PASS="app-password-here"
+FROM_EMAIL="dev@example.com"
+
+# Production (.env.production)
+# Never commit production secrets!
+DATABASE_URL="mysql://user:password@production-host:3306/production_db"
+NEXTAUTH_SECRET="generate-with-powershell-secret-generation"
+NEXTAUTH_URL="https://yourdomain.com"
+SMTP_HOST="smtp.sendgrid.net"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="apikey"
+SMTP_PASS="your-sendgrid-api-key"
+FROM_EMAIL="noreply@yourdomain.com"
+
+================================================================================
+                         TEST ACCOUNTS (After Seeding)
+================================================================================
+
+🔑 ADMIN ACCOUNT
+   Username: admin
+   Password: password123
+   Email:    admin@example.com
+   Role:     Admin
+
+👥 MANAGER ACCOUNT
+   Username: manager
+   Password: password123
+   Email:    manager@example.com
+   Role:     Manager
+
+👤 USER ACCOUNTS
+   Username: analyst
+   Password: password123
+   Email:    analyst@example.com
+   Role:     User
+
+   Username: jdoe
+   Password: password123
+   Email:    john.doe@example.com
+   Role:     User
+
+   Username: asmith
+   Password: password123
+   Email:    alice.smith@example.com
+   Role:     User
+
+================================================================================
+                         QUICK REFERENCE
+================================================================================
+
+Most Common Commands:
+  npm run dev          - Start development server
+  npm run db:generate  - Generate Prisma client
+  npm run db:migrate   - Run migrations
+  npm run db:seed      - Seed database
+  npm run db:studio    - Open Prisma Studio
+
+URLs:
+  Application:     http://localhost:3000
+  Sign In:        http://localhost:3000/signin
+  Dashboard:      http://localhost:3000/dashboard
+  Prisma Studio:  http://localhost:5555
+
+Important Files:
+  .env              - Environment variables (DO NOT COMMIT!)
+  .env.example      - Environment template
+  package.json      - Dependencies and scripts
+  prisma/schema.prisma - Database schema
+
+Windows-Specific Notes:
+  - Always run PowerShell as Administrator for MySQL operations
+  - MySQL service name is usually "MySQL80"
+  - Use PowerShell for advanced commands (Get-Service, etc.)
+  - Command Prompt works for basic npm commands
+  - VS Code is recommended for editing files
+
+================================================================================
+                         COMMON WINDOWS ISSUES & SOLUTIONS
+================================================================================
+
+Issue: "MySQL80 service not found"
+Solution:
+  1. Check if MySQL is installed: mysql --version
+  2. Check services: Get-Service | Where-Object {$_.Name -like "*mysql*"}
+  3. Reinstall MySQL if needed
+
+Issue: "Port 3000 already in use"
+Solution:
+  PowerShell: Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Process
+  Command Prompt: netstat -ano | findstr :3000 (then kill PID)
+
+Issue: "Permission denied" errors
+Solution:
+  - Right-click PowerShell/Command Prompt
+  - Select "Run as Administrator"
+  - Try command again
+
+Issue: "Cannot connect to MySQL"
+Solution:
+  1. Check if MySQL service is running: Get-Service MySQL80
+  2. Start service: Start-Service MySQL80
+  3. Check firewall settings
+  4. Verify credentials in .env file
+
+Issue: "npm install fails"
+Solution:
+  1. Clear cache: npm cache clean --force
+  2. Delete node_modules and package-lock.json
+  3. Run: npm install
+  4. Check internet connection
+
+Issue: "Prisma generate fails"
+Solution:
+  1. Check DATABASE_URL in .env is correct
+  2. Ensure MySQL is running
+  3. Try: npx prisma generate
+  4. Check prisma/schema.prisma syntax
+
+================================================================================
+                         NOTES
+================================================================================
+
+- Always keep .env file secret - never commit it to git
+- Use .env.example as a template for other developers
+- Generate a new NEXTAUTH_SECRET for production
+- MySQL must be running before starting the app
+- Port 3000 must be available for the dev server
+- Port 5555 must be available for Prisma Studio
+- Run PowerShell as Administrator for MySQL service operations
+- Windows Defender/Firewall may block Node.js - allow it if needed
+
+For detailed documentation, see: docs/01-getting-started.md
+
+================================================================================
+
