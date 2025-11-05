@@ -17,13 +17,11 @@ A comprehensive, production-ready Next.js 15 starter template with authenticatio
 - **Framer Motion** for smooth animations
 - **Zod** for type-safe validation
 
-### Authentication & Security
-- ✅ Complete signup/signin flow with email verification
-- ✅ Password reset functionality
-- ✅ Role-based access control (Admin, Manager, User)
-- ✅ Secure password hashing with bcrypt
-- ✅ CSRF protection and secure cookies
-- ✅ Session management with JWT
+### Role-Based Access Control
+- ✅ **Admin**: Full system access, user management, role management
+- ✅ **Manager**: Transfer request approval (final stage), view all requests
+- ✅ **Supervisor**: Transfer request approval (first stage, requires manager selection), view all requests
+- ✅ **User**: Create transfer requests, view own requests, resubmit after changes requested
 
 ### Data Management
 - ✅ Comprehensive forms with 15+ input types
@@ -34,10 +32,15 @@ A comprehensive, production-ready Next.js 15 starter template with authenticatio
 - ✅ Master data management (Teachers, Doctors, Engineers, Lawyers, etc.)
 
 ### Advanced Features
-- ✅ Workflow system for transfer requests (approval flows)
+- ✅ **Workflow system for transfer requests** (two-stage approval flow)
+  - Supervisor approval (requires manager selection)
+  - Manager approval (final approval)
+  - Request changes and resubmission support
+  - Horizontal workflow timeline visualization
+  - Comprehensive audit logging
 - ✅ File manager with folder structure
 - ✅ Dashboard with analytics and KPIs
-- ✅ Email notifications (SMTP)
+- ✅ Email notifications (SMTP) - non-blocking workflow notifications
 - ✅ User profile management with avatar upload
 
 ### UI/UX
@@ -270,6 +273,7 @@ After seeding, you can use these test accounts:
 |----------|----------|------|-------------|
 | `admin` | `password123` | Admin | Administrator with full access |
 | `manager` | `password123` | Manager | Team manager with project access |
+| `supervisor` | `password123` | Supervisor | Supervisor with transfer request approval |
 | `analyst` | `password123` | User | Data analyst with analytics access |
 | `jdoe` | `password123` | User | Regular user account |
 | `asmith` | `password123` | User | Regular user account |
@@ -464,6 +468,47 @@ Comprehensive documentation is available in the [`docs/`](./docs/) folder. Here'
 
 ---
 
+## 🔄 Transfer Request Workflow
+
+The application includes a comprehensive transfer request workflow system with a two-stage approval process:
+
+### Workflow Stages
+
+1. **Draft** → User creates request (not submitted)
+2. **Submitted** → User submits request for review
+3. **Supervisor Review** → Supervisor can approve/reject/request changes
+   - **Supervisor Approval**: Requires manager selection before approval
+   - **SupervisorChangesRequested**: User can resubmit with changes
+   - **SupervisorRejected**: Final state (rejected)
+4. **Manager Review** → Manager can approve/reject/request changes
+   - **ManagerApproved**: Final state (approved)
+   - **ManagerChangesRequested**: User can resubmit with changes
+   - **ManagerRejected**: Final state (rejected)
+
+### Key Features
+
+- ✅ **Manager Selection Required**: Supervisors must select a manager before approving
+- ✅ **Action Buttons**: All workflow actions (approve/reject/request changes) are on the details page
+- ✅ **Listing Page**: Shows only "View Details" button (no inline actions)
+- ✅ **Horizontal Timeline**: Visual workflow progress on details page
+- ✅ **Comments System**: Communication between all parties
+- ✅ **Resubmission**: Users can update and resubmit after changes are requested
+- ✅ **Audit Logging**: Complete trail of all workflow actions
+- ✅ **Email Notifications**: Non-blocking notifications (failures don't break workflow)
+
+### Workflow Files
+
+- `app/(app)/workflows/transfer-requests/page.tsx` - Listing page
+- `app/(app)/workflows/transfer-requests/[id]/page.tsx` - Details page with actions
+- `app/(app)/workflows/transfer-requests/new/page.tsx` - Create new request
+- `app/api/workflows/transfer-requests/` - API routes for workflow operations
+- `lib/workflows/transfer.ts` - Workflow state machine and validation
+- `lib/validations/transfer-requests.ts` - Validation schemas
+
+**Learn More:** [Workflows Documentation](./docs/13-workflows.md)
+
+---
+
 ## 🧠 Code Overview (High-Level)
 
 ### How Authentication Works
@@ -471,7 +516,7 @@ Comprehensive documentation is available in the [`docs/`](./docs/) folder. Here'
 1. **User Registration**: User fills signup form → API validates → Creates user in database → Sends verification email
 2. **Email Verification**: User clicks link → API verifies token → Updates user status
 3. **Login**: User enters credentials → API validates → Creates session → Returns JWT token
-4. **Session Management**: NextAuth.js manages sessions using cookies and database
+4. **Session Management**: NextAuth.js manages sessions using JWT tokens (stored in cookies, not database)
 5. **Protected Routes**: Middleware checks authentication → Redirects if not authenticated
 
 **Key Files:**
@@ -487,7 +532,8 @@ Comprehensive documentation is available in the [`docs/`](./docs/) folder. Here'
 1. **CRUD Operations**: Forms submit data → API validates with Zod → Prisma queries database → Returns response
 2. **Data Tables**: TanStack Table handles sorting, filtering, pagination client-side
 3. **File Upload**: Files uploaded → Validated → Stored in `uploads/` → Metadata saved to database
-4. **Workflows**: State machine manages approval flows → Email notifications sent → Status updated
+4. **Workflows**: State machine manages approval flows → Email notifications sent (non-blocking) → Status updated
+5. **Transfer Requests**: Two-stage approval (Supervisor → Manager) → Manager selection required → Resubmission support
 
 **Key Files:**
 - `app/api/users/route.ts` - User CRUD API
@@ -532,11 +578,12 @@ Comprehensive documentation is available in the [`docs/`](./docs/) folder. Here'
 ### Core Models
 
 - **User**: Authentication and user data
-- **Role**: Role-based access control (Admin, Manager, User)
-- **Session**: NextAuth session management
-- **Account**: OAuth account linking
+- **Role**: Role-based access control (Admin, Manager, Supervisor, User)
+- **Session**: NextAuth session management (required by PrismaAdapter, but using JWT sessions)
+- **Account**: OAuth account linking (required by PrismaAdapter, but not used with credentials provider)
 - **VerificationToken**: Email verification tokens
 - **PasswordResetToken**: Password reset tokens
+- **Upload**: File metadata and storage
 
 ### Data Models
 
@@ -544,18 +591,19 @@ Comprehensive documentation is available in the [`docs/`](./docs/) folder. Here'
 - **Doctor**: Doctor management
 - **Engineer**: Engineer management
 - **Lawyer**: Lawyer management
-- **Employee**: Employee records
-- **MasterData**: Generic master data
 
 ### Workflow Models
 
-- **TransferRequest**: Transfer request workflow
-- **WorkflowState**: Workflow state machine
+- **TransferRequest**: Transfer request workflow (main entity)
+- **ApprovalStep**: Approval step history and decisions
+- **TransferAttachment**: File attachments linked to requests
+- **TransferComment**: Comments and communication on requests
+- **AuditLog**: Complete audit trail of all workflow actions
 
 ### File Management
 
-- **File**: File metadata
-- **Folder**: Folder structure
+- **Upload**: File metadata and storage
+- **TransferAttachment**: Links uploads to transfer requests
 
 **Full Schema:** See [`prisma/schema.prisma`](./prisma/schema.prisma)
 
@@ -716,14 +764,20 @@ After seeding, use these accounts:
 - **User**: `analyst` / `password123`
 
 ### Manual Testing Checklist
-
 - [ ] User registration with email verification
 - [ ] Login/logout functionality
 - [ ] Password reset flow
-- [ ] Role-based page access
-- [ ] CRUD operations (Users, Teachers, Doctors, etc.)
+- [ ] Role-based page access (Admin, Manager, Supervisor, User)
+- [ ] CRUD operations (Users, Teachers, Doctors, Engineers, Lawyers)
 - [ ] File upload and management
-- [ ] Workflow approval flows
+- [ ] **Transfer Request Workflow**:
+  - [ ] Create transfer request with items and attachments
+  - [ ] Supervisor approval (requires manager selection)
+  - [ ] Manager approval (final approval)
+  - [ ] Request changes and resubmission
+  - [ ] Rejection flow
+  - [ ] Comments and communication
+  - [ ] Workflow timeline visualization
 - [ ] Responsive design on mobile
 - [ ] Accessibility with keyboard navigation
 
@@ -770,3 +824,21 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Last Updated**: January 2025
 **Version**: 1.0.0
+
+---
+
+## 📝 Recent Updates
+
+### Workflow System Enhancements (January 2025)
+- ✅ Removed action buttons from listing table (actions now on details page only)
+- ✅ Supervisor approval now requires manager selection (mandatory)
+- ✅ Enhanced workflow timeline visualization (horizontal layout)
+- ✅ Improved error handling and validation messages
+- ✅ Added comprehensive inline documentation to all workflow files
+- ✅ Non-blocking email notifications (workflow continues even if email fails)
+
+### Code Quality Improvements
+- ✅ Added detailed comments to all transfer flow files
+- ✅ Improved error messages with specific validation details
+- ✅ Enhanced UI/UX on transfer request details page
+- ✅ Better separation of concerns (listing vs details pages)
