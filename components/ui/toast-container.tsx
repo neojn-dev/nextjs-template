@@ -1,7 +1,8 @@
 "use client"
 
 import { ToastContainer, toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+// Temporarily commented out to debug CSS build issue
+// import 'react-toastify/dist/ReactToastify.css'
 
 // Export toast functions for use in other components
 export { toast }

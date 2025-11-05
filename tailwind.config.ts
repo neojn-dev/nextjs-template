@@ -60,10 +60,10 @@ const config = {
    * Only classes found in these files are included in the final CSS.
    * 
    * PATTERNS:
-   * - './pages/**/*.{ts,tsx}': Pages directory
-   * - './components/**/*.{ts,tsx}': Components directory
-   * - './app/**/*.{ts,tsx}': App directory (Next.js App Router)
-   * - './src/**/*.{ts,tsx}': Source directory (if using src folder)
+   * - Pages directory: pages folder with ts and tsx files
+   * - Components directory: components folder with ts and tsx files  
+   * - App directory: app folder with ts and tsx files (Next.js App Router)
+   * - Source directory: src folder with ts and tsx files (if using src folder)
    * 
    * WHY IMPORTANT?
    * - Reduces CSS bundle size

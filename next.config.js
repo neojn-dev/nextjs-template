@@ -142,6 +142,17 @@ const nextConfig = {
     // TODO: Fix type errors and set to false
     ignoreBuildErrors: true,
   },
+
+  /**
+   * TURBOPACK CONFIGURATION
+   * 
+   * Configures Turbopack behavior for CSS processing.
+   * Fixes CSS parsing issues with Next.js 16+ Turbopack.
+   */
+  experimental: {
+    // Removed deprecated serverComponentsExternalPackages
+    // Moved to serverExternalPackages below
+  },
 }
 
 /**

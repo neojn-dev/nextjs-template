@@ -49,6 +49,7 @@ export const createTransferRequestSchema = z.object({
   supervisorId: z.string().cuid().optional().nullable(),
   // Prefer upload IDs for attachment linking
   attachmentsIds: z.array(z.string().cuid()).max(10).optional(),
+  itemsJson: z.string().optional(),
 })
 
 /**
@@ -99,12 +100,15 @@ export const requestChangesSchema = z.object({
  * 
  * VALIDATION RULES:
  * - comment: Optional, max 2000 characters
+ * - managerId: Optional, valid CUID format (required when supervisor approves)
  * 
  * USE CASE:
  * Validates approval action (comment is optional).
+ * When supervisor approves, managerId should be provided to assign a manager.
  */
 export const approveSchema = z.object({
-  comment: z.string().max(2000).optional()
+  comment: z.string().max(2000).optional(),
+  managerId: z.string().cuid().optional()
 })
 
 /**
@@ -164,4 +168,5 @@ export const resubmitTransferRequestSchema = z.object({
   toLocation: z.string().min(1).max(200),
   purpose: z.string().max(2000).optional(),
   attachmentsIds: z.array(z.string().cuid()).max(10).optional(),
+  itemsJson: z.string().optional(),
 })

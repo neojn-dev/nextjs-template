@@ -570,7 +570,7 @@ export function debugSession(session: any, context: string = 'SESSION') {
  * debug.api('POST', '/api/users', data, response)
  * debug.db('create', 'User', data, result)
  * debug.auth('signin', user, session)
- * debug.perf('Operation', () => { /* code */ })
+ * debug.perf('Operation', () => { // your code here })
  * debug.middleware('/api/users', 'GET', headers)
  * debug.ssr('Component', props, context)
  * debug.breakpoint(true, 'Message')

@@ -429,30 +429,7 @@ export default function SignUpPage() {
                             </motion.p>
                           )}
                           
-                          /**
-                           * PASSWORD REQUIREMENTS DISPLAY
-                           * 
-                           * Shows real-time feedback as user types password.
-                           * Only displays when user has started typing (watchedFields.password exists).
-                           * 
-                           * HOW IT WORKS:
-                           * 1. User types password
-                           * 2. Each requirement regex is tested against password
-                           * 3. Requirements turn green with checkmark when met
-                           * 4. Requirements stay gray with X when not met
-                           * 
-                           * REQUIREMENTS CHECKED:
-                           * - Length: At least 8 characters
-                           * - Lowercase: At least one lowercase letter
-                           * - Uppercase: At least one uppercase letter
-                           * - Number: At least one number
-                           * - Special: At least one special character
-                           * 
-                           * UX BENEFITS:
-                           * - Immediate feedback (no need to submit to see errors)
-                           * - Visual indicators (green checkmarks, gray X marks)
-                           * - Clear requirements list
-                           */
+                          {/* PASSWORD REQUIREMENTS DISPLAY - Shows real-time feedback as user types password */}
                           {watchedFields.password && (
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
