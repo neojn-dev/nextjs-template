@@ -1,4 +1,4 @@
-# NextJS Template App + MySQL Setup & Run Script (PowerShell)
+﻿# NextJS Template App + MySQL Setup & Run Script (PowerShell)
 # Complete setup automation for Windows including MySQL database configuration
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +30,219 @@ function Write-Error {
 function Write-Info {
     param($Message)
     Write-Host "[INFO] $Message" -ForegroundColor Cyan
+}
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+function Get-MySQLPath {
+    # Try to find MySQL executable
+    $mysqlPath = Get-Command mysql -ErrorAction SilentlyContinue
+    if ($mysqlPath) {
+        return $mysqlPath.Source
+    }
+    
+    # Common MySQL installation paths on Windows
+    $commonPaths = @(
+        "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.1\bin\mysql.exe",
+        "C:\Program Files (x86)\MySQL\MySQL Server 8.0\bin\mysql.exe",
+        "C:\Program Files (x86)\MySQL\MySQL Server 8.1\bin\mysql.exe"
+    )
+    
+    foreach ($path in $commonPaths) {
+        if (Test-Path $path) {
+            return $path
+        }
+    }
+    
+    # Don't fallback to "mysql" - throw an error instead
+    Write-Error "MySQL executable not found. Please ensure MySQL is installed and mysql.exe is in your PATH or at one of the standard installation locations."
+    throw "MySQL executable not found"
+}
+
+function Invoke-MySQLCommand {
+    param(
+        [string]$Command,
+        [string]$Password,
+        [string]$Database = ""
+    )
+    
+    try {
+        $mysqlPath = Get-MySQLPath
+        
+        # Verify the path exists before attempting to use it
+        if (-not (Test-Path $mysqlPath)) {
+            return @{ Success = $false; Output = "MySQL executable not found at: $mysqlPath" }
+        }
+    }
+    catch {
+        return @{ Success = $false; Output = "Failed to locate MySQL executable: $($_.Exception.Message)" }
+    }
+    
+    # Build arguments array properly for PowerShell
+    $arguments = @("-u", "root")
+    
+    if ($Password) {
+        # Use --password= format for better compatibility
+        $arguments += "--password=$Password"
+    }
+    
+    if ($Database) {
+        $arguments += $Database
+    }
+    
+    $arguments += "-e", $Command
+    
+    try {
+        # Use ProcessStartInfo to properly capture exit code (warnings don't affect exit code)
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = $mysqlPath
+        $psi.Arguments = ($arguments | ForEach-Object { 
+            if ($_ -match '\s') { "`"$_`"" } else { $_ }
+        }) -join " "
+        $psi.UseShellExecute = $false
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.CreateNoWindow = $true
+        
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $psi
+        
+        $process.Start() | Out-Null
+        $stdoutText = $process.StandardOutput.ReadToEnd()
+        $stderrText = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        
+        $exitCode = $process.ExitCode
+        $process.Dispose()
+        
+        # Combine output, but separate warnings from errors
+        $allOutput = $stdoutText.Trim()
+        if ($stderrText) {
+            $stderrTrimmed = $stderrText.Trim()
+            # Check if stderr contains actual errors (not just warnings)
+            if ($stderrTrimmed -match "ERROR\s+\d+") {
+                # It's an actual error, include it
+                if ($allOutput) {
+                    $allOutput += "`n" + $stderrTrimmed
+                } else {
+                    $allOutput = $stderrTrimmed
+                }
+            }
+            # Warnings are ignored for success determination
+        }
+        
+        # Success if exit code is 0 and no ERROR messages in output
+        $hasError = ($exitCode -ne 0) -or ($allOutput -match "ERROR\s+\d+")
+        
+        # Filter warnings from output for cleaner display (but keep actual output)
+        $cleanOutput = ($allOutput -split "`n" | Where-Object { 
+            $_ -notmatch "^mysql:.*Warning" -and $_ -notmatch "\[Warning\]" -and $_.Trim() -ne ""
+        }) -join "`n"
+        
+        if (-not $hasError) {
+            return @{ Success = $true; Output = $cleanOutput }
+        }
+        else {
+            return @{ Success = $false; Output = $allOutput }
+        }
+    }
+    catch {
+        return @{ Success = $false; Output = "Exception starting MySQL process: $($_.Exception.Message). MySQL path was: $mysqlPath" }
+    }
+}
+
+function Invoke-ExternalCommand {
+    param(
+        [string]$Command,
+        [string[]]$Arguments = @(),
+        [bool]$IgnoreErrors = $false
+    )
+    
+    try {
+        $output = & $Command $Arguments 2>&1
+        if ($LASTEXITCODE -eq 0 -or $IgnoreErrors) {
+            return @{ Success = $true; Output = $output }
+        }
+        else {
+            return @{ Success = $false; Output = $output }
+        }
+    }
+    catch {
+        return @{ Success = $false; Output = $_.Exception.Message }
+    }
+}
+
+function Encode-UrlPassword {
+    param([string]$Password)
+    
+    if ([string]::IsNullOrEmpty($Password)) {
+        return ""
+    }
+    
+    # URL encode special characters in password
+    $encoded = [System.Uri]::EscapeDataString($Password)
+    return $encoded
+}
+
+function Start-ServerAndShowLogs {
+    param($nextjsJob, $prismaJob)
+    
+    # Open both applications in browser
+    Write-Info "Opening both applications in browser..."
+    try {
+        Start-Process "http://localhost:5555" -ErrorAction SilentlyContinue
+        Start-Sleep -Milliseconds 500
+        Start-Process "http://localhost:3000" -ErrorAction SilentlyContinue
+        Write-Success "Both applications opened in browser!"
+        Write-Info "  • Next.js App: http://localhost:3000"
+        Write-Info "  • Prisma Studio: http://localhost:5555"
+    }
+    catch {
+        Write-Warning "Could not auto-open browser"
+        Write-Info "Please visit manually:"
+        Write-Info "  • Next.js App: http://localhost:3000"
+        Write-Info "  • Prisma Studio: http://localhost:5555"
+    }
+    
+    Write-Host ""
+    Write-Host "============================================================" -ForegroundColor Magenta
+    Write-Host "  ✅ Both servers are running:" -ForegroundColor Green
+    Write-Host "  📊 Prisma Studio: http://localhost:5555" -ForegroundColor Cyan
+    Write-Host "  🌐 Next.js App:    http://localhost:3000" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+    Write-Host "============================================================" -ForegroundColor Magenta
+    Write-Host ""
+    
+    try {
+        # Show Next.js logs in foreground
+        Write-Host ""
+        Write-Host "========== Next.js Development Server Logs ==========" -ForegroundColor Cyan
+        Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
+        Write-Host ""
+        
+        while ($true) {
+            $jobOutput = Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
+            if ($jobOutput) {
+                Write-Host $jobOutput
+            }
+            if ($nextjsJob.State -eq "Completed" -or $nextjsJob.State -eq "Failed") {
+                break
+            }
+            Start-Sleep -Seconds 1
+        }
+    }
+    catch {
+        Write-Host "`nStopping servers..." -ForegroundColor Yellow
+    }
+    finally {
+        Write-Host "`nCleaning up..." -ForegroundColor Yellow
+        Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+    }
 }
 
 # ============================================================
@@ -110,37 +323,46 @@ Write-Host ""
 
 Write-Step "Checking MySQL installation..."
 
-$mysqlInstalled = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
+# Check for MySQL service with different possible names
+$mysqlService = $null
+$serviceNames = @("MySQL80", "MySQL", "MySQL57", "MySQL81")
 
-if ($mysqlInstalled) {
-    Write-Success "MySQL80 service found!"
-    
+foreach ($serviceName in $serviceNames) {
+    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+    if ($service) {
+        $mysqlService = $service
+        Write-Success "MySQL service found: $serviceName"
+        break
+    }
+}
+
+if ($mysqlService) {
     # Check if running
-    if ($mysqlInstalled.Status -eq "Running") {
-        Write-Success "MySQL80 service is running"
+    if ($mysqlService.Status -eq "Running") {
+        Write-Success "MySQL service is running"
     }
     else {
-        Write-Info "Starting MySQL80 service..."
+        Write-Info "Starting MySQL service..."
         try {
-            Start-Service -Name "MySQL80"
+            Start-Service -Name $mysqlService.Name
             Start-Sleep -Seconds 3
-            Write-Success "MySQL80 service started"
+            Write-Success "MySQL service started"
         }
         catch {
-            Write-Error "Failed to start MySQL80 service"
+            Write-Error "Failed to start MySQL service"
             exit 1
         }
     }
 }
 else {
-    Write-Warning "MySQL80 service not found"
+    Write-Warning "MySQL service not found"
     Write-Info ""
     Write-Info "MANUAL MYSQL INSTALLATION REQUIRED:"
     Write-Info "  1. Download: https://dev.mysql.com/downloads/mysql/"
     Write-Info "  2. Run installer (mysql-installer-web-community-8.0.x.msi)"
     Write-Info "  3. Choose 'Developer Default' setup type"
     Write-Info "  4. Complete installation with all default options"
-    Write-Info "  5. Set a MySQL root password (remember it!)"
+    Write-Info "  5. IMPORTANT: Set MySQL root password to 'password' (this script expects this password)"
     Write-Info "  6. Run this script again"
     Write-Info ""
     
@@ -152,13 +374,19 @@ else {
     }
     
     # Check again
-    $mysqlInstalled = Get-Service -Name "MySQL80" -ErrorAction SilentlyContinue
-    if (-not $mysqlInstalled) {
-        Write-Error "MySQL80 service still not found"
-        exit 1
+    foreach ($serviceName in $serviceNames) {
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+        if ($service) {
+            $mysqlService = $service
+            Write-Success "MySQL service found: $serviceName"
+            break
+        }
     }
     
-    Write-Success "MySQL80 service found!"
+    if (-not $mysqlService) {
+        Write-Error "MySQL service still not found"
+        exit 1
+    }
 }
 
 Write-Host ""
@@ -169,22 +397,81 @@ Write-Host ""
 
 Write-Step "Configuring MySQL connection..."
 
-Write-Info "Enter your MySQL root password:"
-Write-Info "(If no password was set during installation, just press Enter)"
-$rootPassword = Read-Host -AsSecureString "Root Password"
+# Hardcoded MySQL root password - This script expects MySQL root password to be "password"
+# If your MySQL uses a different password, change it to "password" or update this variable
+$rootPasswordPlain = "password"
 
-# Convert to plain text
-$rootPasswordPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($rootPassword))
+Write-Info "Using hardcoded MySQL root password: password"
+Write-Info "Testing MySQL connection with root/password credentials..."
 
-# Test connection
-Write-Info "Testing MySQL connection..."
-try {
-    $testConnection = mysql -u root -p"$rootPasswordPlain" -e "SELECT 1;" 2>&1 | Out-String
-    Write-Success "MySQL connection successful!"
+# Test connection with hardcoded password
+$testResult = Invoke-MySQLCommand -Command "SELECT 1;" -Password $rootPasswordPlain
+
+if ($testResult.Success) {
+    Write-Success "MySQL connection successful with root/password!"
 }
-catch {
-    Write-Error "Failed to connect to MySQL. Check your password."
-    exit 1
+else {
+    Write-Warning "Failed to connect to MySQL with root/password credentials."
+    Write-Info "Error details: $($testResult.Output)"
+    Write-Info "Attempting connection without password..."
+    
+    # Try without password as fallback
+    $testResultNoPass = Invoke-MySQLCommand -Command "SELECT 1;" -Password ""
+    
+    if ($testResultNoPass.Success) {
+        Write-Warning "Connection works WITHOUT password, but password 'password' was expected."
+        Write-Info "Setting MySQL root password to 'password'..."
+        
+        # Try to set the password
+        $setPasswordResult = Invoke-MySQLCommand -Command "ALTER USER 'root'@'localhost' IDENTIFIED BY 'password'; FLUSH PRIVILEGES;" -Password ""
+        
+        if ($setPasswordResult.Success) {
+            Write-Success "Password set successfully!"
+            # Test again with password
+            $testResult = Invoke-MySQLCommand -Command "SELECT 1;" -Password $rootPasswordPlain
+            if ($testResult.Success) {
+                Write-Success "MySQL connection successful with root/password!"
+            }
+            else {
+                Write-Error "Failed to connect even after setting password."
+                Write-Info "Output: $($testResult.Output)"
+                exit 1
+            }
+        }
+        else {
+            Write-Error "Failed to set MySQL password."
+            Write-Info "Please manually set MySQL root password to 'password':"
+            Write-Info "  1. Run: mysql -u root"
+            Write-Info "  2. In MySQL: ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
+            Write-Info "  3. In MySQL: FLUSH PRIVILEGES;"
+            Write-Info "  4. Run this script again"
+            exit 1
+        }
+    }
+    else {
+        Write-Error "Failed to connect to MySQL."
+        Write-Info ""
+        Write-Info "Connection test with password 'password' failed:"
+        Write-Info "  Output: $($testResult.Output)"
+        Write-Info ""
+        Write-Info "Connection test without password also failed:"
+        Write-Info "  Output: $($testResultNoPass.Output)"
+        Write-Info ""
+        Write-Info "Please ensure:"
+        Write-Info "  1. MySQL service is running"
+        Write-Info "  2. MySQL root password is set to 'password'"
+        Write-Info "  3. Or set it manually by running:"
+        Write-Info "     & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u root -p"
+        Write-Info "     (Enter your current password when prompted)"
+        Write-Info "     Then in MySQL run these commands:"
+        Write-Info "     ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
+        Write-Info "     FLUSH PRIVILEGES;"
+        Write-Info "     exit"
+        Write-Info ""
+        Write-Info "  4. Or update the script to use your actual MySQL root password"
+        Write-Info "     Edit line 402 in setup-and-run.ps1 and change 'password' to your actual password"
+        exit 1
+    }
 }
 
 Write-Host ""
@@ -195,12 +482,14 @@ Write-Host ""
 
 Write-Step "Creating database..."
 
-try {
-    $createDb = mysql -u root -p"$rootPasswordPlain" -e "CREATE DATABASE IF NOT EXISTS next_template_db;" 2>&1
+$createDbResult = Invoke-MySQLCommand -Command "CREATE DATABASE IF NOT EXISTS next_template_db;" -Password $rootPasswordPlain
+
+if ($createDbResult.Success) {
     Write-Success "Database 'next_template_db' created/verified"
 }
-catch {
+else {
     Write-Error "Failed to create database"
+    Write-Info "Output: $($createDbResult.Output)"
     exit 1
 }
 
@@ -213,6 +502,7 @@ Write-Host ""
 Write-Step "Updating environment configuration..."
 
 $envFile = ".env"
+$scriptPath = Get-Location
 
 if (-not (Test-Path $envFile)) {
     Write-Warning ".env file not found"
@@ -234,9 +524,11 @@ else {
 # Read current .env
 $envContent = Get-Content $envFile -Raw
 
-# Prepare database URL
-if ($rootPasswordPlain) {
-    $databaseUrl = "mysql://root:$rootPasswordPlain@localhost:3306/next_template_db"
+# Prepare database URL with URL-encoded password
+$encodedPassword = Encode-UrlPassword -Password $rootPasswordPlain
+
+if ($encodedPassword) {
+    $databaseUrl = "mysql://root:$encodedPassword@localhost:3306/next_template_db"
 }
 else {
     $databaseUrl = "mysql://root@localhost:3306/next_template_db"
@@ -251,7 +543,7 @@ else {
 }
 
 # Write back to .env
-Set-Content -Path $envFile -Value $envContent
+[System.IO.File]::WriteAllText("$scriptPath\.env", $envContent, [System.Text.Encoding]::UTF8)
 
 Write-Success ".env file updated with MySQL connection"
 
@@ -264,12 +556,14 @@ Write-Host ""
 Write-Step "Installing dependencies..."
 Write-Info "This may take a few minutes..."
 
-try {
-    npm install
+$installResult = Invoke-ExternalCommand -Command "npm" -Arguments @("install")
+
+if ($installResult.Success) {
     Write-Success "Dependencies installed successfully!"
 }
-catch {
+else {
     Write-Error "Failed to install dependencies"
+    Write-Info "Output: $($installResult.Output)"
     exit 1
 }
 
@@ -281,20 +575,22 @@ Write-Host ""
 
 Write-Step "Checking Prisma installation..."
 
-try {
-    $prismaVersion = npx prisma --version 2>&1
-    Write-Success "Prisma found: $prismaVersion"
+$prismaCheck = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "--version") -IgnoreErrors $true
+
+if ($prismaCheck.Success) {
+    Write-Success "Prisma found: $($prismaCheck.Output)"
 }
-catch {
-    Write-Error "Prisma is not properly installed"
-    Write-Info "Attempting to reinstall..."
+else {
+    Write-Warning "Prisma check failed, attempting to install..."
     
-    try {
-        npm install prisma @prisma/client
+    $installPrisma = Invoke-ExternalCommand -Command "npm" -Arguments @("install", "prisma", "@prisma/client")
+    
+    if ($installPrisma.Success) {
         Write-Success "Prisma reinstalled successfully!"
     }
-    catch {
+    else {
         Write-Error "Failed to install Prisma"
+        Write-Info "Output: $($installPrisma.Output)"
         exit 1
     }
 }
@@ -307,19 +603,22 @@ Write-Host ""
 
 Write-Step "Generating Prisma client..."
 
-try {
-    npm run db:generate
+$generateResult = Invoke-ExternalCommand -Command "npm" -Arguments @("run", "db:generate") -IgnoreErrors $true
+
+if ($generateResult.Success) {
     Write-Success "Prisma client generated successfully!"
 }
-catch {
+else {
     Write-Warning "npm script failed, trying alternative method..."
     
-    try {
-        npx prisma generate
+    $generateAlt = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "generate")
+    
+    if ($generateAlt.Success) {
         Write-Success "Prisma client generated!"
     }
-    catch {
+    else {
         Write-Error "Failed to generate Prisma client"
+        Write-Info "Output: $($generateAlt.Output)"
         exit 1
     }
 }
@@ -337,26 +636,20 @@ $maxRetries = 3
 $retryCount = 0
 
 try {
-    $migrationStatus = npx prisma migrate status 2>&1 | Out-String
+    $migrationStatusResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "status") -IgnoreErrors $true
+    $migrationStatus = $migrationStatusResult.Output | Out-String
     
     if ($migrationStatus -match "Database schema is up to date") {
         Write-Success "Database is already up to date!"
         $migrationSuccess = $true
         
-        # Dev convenience: ensure schema changes without migrations are synced (e.g. newly added models)
-        # This is safe for local dev environments and fixes cases where new models (like workflow tables)
-        # exist in schema.prisma but have no migration yet.
+        # Dev convenience: ensure schema changes without migrations are synced
         Write-Info "Ensuring development database schema is synced (running prisma db push)..."
-        try {
-            npx prisma db push 2>&1 | Out-Null
-            if ($LASTEXITCODE -eq 0) {
-                Write-Success "Prisma schema synced to database."
-                # Regenerate client in case push introduced new tables
-                npx prisma generate 2>&1 | Out-Null
-            }
-        }
-        catch {
-            Write-Warning "Prisma db push failed. Continuing with existing schema..."
+        $pushResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "db", "push") -IgnoreErrors $true
+        if ($pushResult.Success) {
+            Write-Success "Prisma schema synced to database."
+            # Regenerate client in case push introduced new tables
+            Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "generate") -IgnoreErrors $true | Out-Null
         }
     }
     elseif ($migrationStatus -match "migration.*have not yet been applied" -or $migrationStatus -match "following migration") {
@@ -365,7 +658,7 @@ try {
     }
     elseif ($migrationStatus -match "failed to apply|migration.*failed|Migration.*failed|Cannot drop table|foreign key constraint") {
         Write-Warning "Migration errors detected. Attempting to resolve..."
-        $retryCount = 1  # Start with retry logic
+        $retryCount = 1
     }
     else {
         Write-Info "Migration status unclear. Attempting to apply migrations..."
@@ -386,8 +679,8 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
         if ($retryCount -eq 1) {
             # First attempt: deploy mode
             Write-Info "Attempt $retryCount : Running migrations (deploy mode)..."
-            $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
-            if ($LASTEXITCODE -eq 0) {
+            $deployResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "deploy")
+            if ($deployResult.Success) {
                 Write-Success "Database migrations completed!"
                 $migrationSuccess = $true
                 break
@@ -401,7 +694,6 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
             Write-Warning "Attempt $retryCount : Migration issues detected."
             Write-Info "Checking if database reset is needed..."
             
-            # Check if there are broken migrations or missing tables
             if ($migrationStatus -match "failed to apply|Cannot drop table|foreign key constraint") {
                 Write-Warning "Database may be in inconsistent state."
                 Write-Info "Attempting to fix by applying migrations with force resolve..."
@@ -411,13 +703,13 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
                 if ($failedMatch -and $failedMatch.Matches.Count -gt 0) {
                     $failedMigration = $failedMatch.Matches[0].Groups[1].Value
                     Write-Info "Resolving failed migration: $failedMigration"
-                    echo "y" | npx prisma migrate resolve --rolled-back "$failedMigration" 2>&1 | Out-Null
+                    "y" | Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "resolve", "--rolled-back", $failedMigration) -IgnoreErrors $true | Out-Null
                 }
                 
                 # Try deploy again
                 Write-Info "Retrying migrations after resolution..."
-                $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
-                if ($LASTEXITCODE -eq 0) {
+                $deployResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "deploy")
+                if ($deployResult.Success) {
                     Write-Success "Database migrations completed after resolution!"
                     $migrationSuccess = $true
                     break
@@ -426,8 +718,8 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
             
             # Last resort: Try dev mode
             Write-Info "Final attempt: Trying migrate dev mode..."
-            $devOutput = npx prisma migrate dev --name auto_fix 2>&1 | Out-String
-            if ($LASTEXITCODE -eq 0) {
+            $devResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "dev", "--name", "auto_fix")
+            if ($devResult.Success) {
                 Write-Success "Database migrations completed!"
                 $migrationSuccess = $true
                 break
@@ -441,17 +733,20 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
             
             try {
                 # Reset database
-                echo "y" | npx prisma migrate reset --force --skip-seed 2>&1 | Out-Null
-                if ($LASTEXITCODE -eq 0) {
+                "y" | Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "reset", "--force", "--skip-seed") -IgnoreErrors $true | Out-Null
+                
+                $resetResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "reset", "--force", "--skip-seed") -IgnoreErrors $true
+                if ($resetResult.Success) {
                     Write-Success "Database reset successful!"
                     Write-Info "Applying fresh migrations..."
                     
-                    $deployOutput = npx prisma migrate deploy 2>&1 | Out-String
-                    if ($LASTEXITCODE -ne 0) {
-                        $devOutput = npx prisma migrate dev --name init 2>&1 | Out-String
+                    $deployResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "deploy")
+                    if (-not $deployResult.Success) {
+                        $devResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "dev", "--name", "init")
                     }
                     
-                    if ($LASTEXITCODE -eq 0) {
+                    $finalCheck = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "status") -IgnoreErrors $true
+                    if ($finalCheck.Success) {
                         Write-Success "Database migrations completed after reset!"
                         $migrationSuccess = $true
                         break
@@ -459,7 +754,7 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
                 }
             }
             catch {
-                Write-Error "Database reset failed"
+                Write-Error "Database reset failed: $_"
             }
         }
     }
@@ -490,32 +785,23 @@ $seedMaxRetries = 3
 $seedSuccess = $false
 
 while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
-    try {
-        npm run db:seed 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Success "Database seeded successfully!"
-            Write-Info "Sample data includes:"
-            Write-Info "  - 3 roles (Admin, Manager, User)"
-            Write-Info "  - 10 test users (admin, manager, analyst, etc.)"
-            Write-Info "  - 100 Teachers, Doctors, Engineers, Lawyers"
-            Write-Info "  - 100 Master Data records"
-            $seedSuccess = $true
-        }
-        else {
-            throw "Seed command returned non-zero exit code"
-        }
+    $seedResult = Invoke-ExternalCommand -Command "npm" -Arguments @("run", "db:seed") -IgnoreErrors $true
+    
+    if ($seedResult.Success) {
+        Write-Success "Database seeded successfully!"
+        Write-Info "Sample data includes:"
+        Write-Info '  - 3 roles (Admin, Manager, User)'
+        Write-Info '  - 10 test users (admin, manager, analyst, etc.)'
+        Write-Info "  - 100 Teachers, Doctors, Engineers, Lawyers"
+        Write-Info "  - 100 Master Data records"
+        $seedSuccess = $true
     }
-    catch {
+    else {
         $seedRetries++
         if ($seedRetries -lt $seedMaxRetries) {
             Write-Warning "Database seeding failed (Attempt $seedRetries/$seedMaxRetries)"
             Write-Info "Regenerating Prisma client and retrying..."
-            try {
-                npx prisma generate 2>&1 | Out-Null
-            }
-            catch {
-                # Ignore generate errors
-            }
+            Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "generate") -IgnoreErrors $true | Out-Null
             Start-Sleep -Seconds 2
             Write-Info "Retrying seed..."
         }
@@ -537,12 +823,13 @@ Write-Host ""
 
 Write-Step "Verifying database setup..."
 
-try {
-    $tableCount = mysql -u root -p"$rootPasswordPlain" next_template_db -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'next_template_db';" 2>&1 | Select-Object -Last 1
+$verifyResult = Invoke-MySQLCommand -Command 'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = ''next_template_db'';' -Password $rootPasswordPlain -Database 'next_template_db'
+
+if ($verifyResult.Success) {
     Write-Success "Database verification passed!"
     Write-Info "Database tables created successfully"
 }
-catch {
+else {
     Write-Warning "Could not verify database, but setup may still be successful"
 }
 
@@ -646,142 +933,44 @@ Write-Host "  - npm run lint          Run linting"
 Write-Host ""
 
 # ============================================================
-# STEP 15: FINAL CREDENTIALS DISPLAY (BEFORE STARTING SERVERS)
-# ============================================================
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host "📋 LOGIN CREDENTIALS - Copy these for easy access" -ForegroundColor Magenta
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host ""
-
-Write-Host "  🔑 ADMIN ACCOUNT" -ForegroundColor Yellow
-Write-Host "     Username: admin"
-Write-Host "     Password: password123"
-Write-Host "     Email:    admin@example.com"
-Write-Host ""
-
-Write-Host "  👥 MANAGER ACCOUNT" -ForegroundColor Yellow
-Write-Host "     Username: manager"
-Write-Host "     Password: password123"
-Write-Host "     Email:    manager@example.com"
-Write-Host ""
-
-Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
-Write-Host "     Username: analyst"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "     Username: jdoe"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "     Username: asmith"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "  💡 Tip: All passwords are: password123" -ForegroundColor Cyan
-Write-Host "  🔗 Sign in at: http://localhost:3000/signin" -ForegroundColor Cyan
-Write-Host ""
-
-# ============================================================
-# STEP 18: FINAL CREDENTIALS DISPLAY (BEFORE STARTING SERVERS)
-# ============================================================
-
-Write-Host ""
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host "📋 LOGIN CREDENTIALS - Copy these for easy access" -ForegroundColor Magenta
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host ""
-
-Write-Host "  🔑 ADMIN ACCOUNT" -ForegroundColor Yellow
-Write-Host "     Username: admin"
-Write-Host "     Password: password123"
-Write-Host "     Email:    admin@example.com"
-Write-Host ""
-
-Write-Host "  👥 MANAGER ACCOUNT" -ForegroundColor Yellow
-Write-Host "     Username: manager"
-Write-Host "     Password: password123"
-Write-Host "     Email:    manager@example.com"
-Write-Host ""
-
-Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
-Write-Host "     Username: analyst"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "     Username: jdoe"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "     Username: asmith"
-Write-Host "     Password: password123"
-Write-Host ""
-
-Write-Host "  💡 Tip: All passwords are: password123" -ForegroundColor Cyan
-Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host ""
-
-# ============================================================
-# STEP 19: FINAL CREDENTIALS REMINDER
-# ============================================================
-
-Write-Host ""
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "📋 LOGIN CREDENTIALS - Ready to use!" -ForegroundColor Magenta
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host ""
-
-Write-Host "  🔑 ADMIN:     admin / password123" -ForegroundColor Yellow
-Write-Host "  👥 MANAGER:   manager / password123" -ForegroundColor Yellow
-Write-Host "  👤 USERS:     analyst, jdoe, asmith / password123" -ForegroundColor Yellow
-Write-Host ""
-
-Write-Host "  🔗 Sign in: http://localhost:3000/signin" -ForegroundColor Cyan
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host ""
-
-# ============================================================
-# STEP 16: START PRISMA STUDIO
+# STEP 15: START PRISMA STUDIO
 # ============================================================
 
 Write-Host ""
 Write-Step "Starting Prisma Studio..."
 Write-Info "Prisma Studio will be available at http://localhost:5555"
 
+# Get current directory for job
+$currentDir = Get-Location
+
 # Start Prisma Studio in background
-$prismaJob = Start-Job -ScriptBlock {
-    Set-Location $using:PWD
-    npx prisma studio --browser none
+try {
+    $prismaJob = Start-Job -ScriptBlock {
+        param($workingDir)
+        Set-Location $workingDir
+        npx prisma studio --browser none 2>&1
+    } -ArgumentList $currentDir
+    
+    Start-Sleep -Seconds 4
+    
+    if ($prismaJob.State -eq "Running") {
+        Write-Success "Prisma Studio started! (Job ID: $($prismaJob.Id))"
+        Write-Info "Prisma Studio will open in browser when Next.js is ready..."
+    }
+    else {
+        Write-Warning "Prisma Studio job may have failed to start"
+    }
+}
+catch {
+    Write-Warning "Failed to start Prisma Studio in background: $_"
+    Write-Info "You can start it manually later with: npm run db:studio"
+    $prismaJob = $null
 }
 
-Start-Sleep -Seconds 4
-
-Write-Success "Prisma Studio started! (Job ID: $($prismaJob.Id))"
-Write-Info "Prisma Studio will open in browser when Next.js is ready..."
-
 Write-Host ""
 
 # ============================================================
-# STEP 17: FINAL CREDENTIALS REMINDER
-# ============================================================
-
-Write-Host ""
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host "📋 LOGIN CREDENTIALS - Ready to use!" -ForegroundColor Magenta
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host ""
-Write-Host "  🔑 ADMIN:     admin / password123" -ForegroundColor Yellow
-Write-Host "  👥 MANAGER:   manager / password123" -ForegroundColor Yellow
-Write-Host "  👤 USERS:     analyst, jdoe, asmith / password123" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  🔗 Sign in: http://localhost:3000/signin" -ForegroundColor Cyan
-Write-Host "════════════════════════════════════════════════════════════" -ForegroundColor Magenta
-Write-Host ""
-
-# ============================================================
-# STEP 18: START DEVELOPMENT SERVER
+# STEP 16: START DEVELOPMENT SERVER
 # ============================================================
 
 Write-Host ""
@@ -795,162 +984,65 @@ Start-Sleep -Seconds 2
 Write-Success "LAUNCHING NextJS Template App..."
 Write-Host ""
 
-# Start Next.js dev server in background to check if it starts
+# Start Next.js dev server in background
 Write-Info "Starting Next.js server..."
-$nextjsJob = Start-Job -ScriptBlock {
-    Set-Location $using:PWD
-    npm run dev 2>&1
-}
-
-# Wait for Next.js to start
-    Write-Info "Waiting for Next.js server to start..."
-    Start-Sleep -Seconds 5
-
-# Check if server is responding
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
-    if ($response.StatusCode -eq 200) {
-        Write-Success "Next.js server is running!"
-        
-        # Open both applications in browser
-        Write-Info "Opening both applications in browser..."
-        try {
-            # Open Prisma Studio
-            Start-Process "http://localhost:5555"
-            Start-Sleep -Milliseconds 500
-            # Open Next.js app
-            Start-Process "http://localhost:3000"
-            Write-Success "Both applications opened in browser!"
-            Write-Info "  • Next.js App: http://localhost:3000"
-            Write-Info "  • Prisma Studio: http://localhost:5555"
-        }
-        catch {
-            Write-Warning "Could not auto-open browser"
-            Write-Info "Please visit manually:"
-            Write-Info "  • Next.js App: http://localhost:3000"
-            Write-Info "  • Prisma Studio: http://localhost:5555"
-        }
-        
-        Write-Host ""
-        Write-Host "============================================================" -ForegroundColor Magenta
-        Write-Host "  ✅ Both servers are running:" -ForegroundColor Green
-        Write-Host "  📊 Prisma Studio: http://localhost:5555" -ForegroundColor Cyan
-        Write-Host "  🌐 Next.js App:    http://localhost:3000" -ForegroundColor Cyan
-        Write-Host ""
-        Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
-        Write-Host "============================================================" -ForegroundColor Magenta
-        Write-Host ""
-        
-                # Handle cleanup on Ctrl+C
-        $cleanupHandler = {
-            Write-Host "`n🛑 Cleaning up processes..." -ForegroundColor Yellow
-            Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-            Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-            exit 0
-        }
-        
-        # Register cleanup handler
-        [Console]::TreatControlCAsInput = $false
-        $null = Register-ObjectEvent -InputObject ([System.Console]) -EventName "CancelKeyPress" -Action $cleanupHandler
-        
-        try {
-            # Show Next.js logs in foreground
-            Write-Host ""
-            Write-Host "========== Next.js Development Server Logs ==========" -ForegroundColor Cyan
-            Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
-            Write-Host ""
-            
-            while ($true) {
-                $jobOutput = Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
-                if ($jobOutput) {
-                    Write-Host $jobOutput
-                }
-                if ($nextjsJob.State -eq "Completed" -or $nextjsJob.State -eq "Failed") {
-                    break
-                }
-                Start-Sleep -Seconds 1
-            }
-        }
-        catch {
-            Write-Host "`nStopping servers..." -ForegroundColor Yellow
-        }
-        finally {
-            Write-Host "`nCleaning up..." -ForegroundColor Yellow
-            Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-            Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-        }
-    }
-    else {
-        throw "Server not ready"
+    $nextjsJob = Start-Job -ScriptBlock {
+        param($workingDir)
+        Set-Location $workingDir
+        npm run dev 2>&1
+    } -ArgumentList $currentDir
+    
+    if ($nextjsJob.State -ne "Running") {
+        Write-Warning "Next.js job may have failed to start"
     }
 }
 catch {
-    Write-Warning "Next.js server may still be starting..."
-    Write-Info "Waiting a bit longer..."
-    Start-Sleep -Seconds 5
-    
+    Write-Error "Failed to start Next.js server: $_"
+    if ($prismaJob) {
+        Stop-Job -Job $prismaJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $prismaJob -ErrorAction SilentlyContinue
+    }
+    exit 1
+}
+
+# Wait for Next.js to start
+Write-Info "Waiting for Next.js server to start..."
+Start-Sleep -Seconds 5
+
+# Check if server is responding
+$serverReady = $false
+$maxWaitTime = 15
+$waitCount = 0
+
+while (-not $serverReady -and $waitCount -lt $maxWaitTime) {
     try {
         $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -UseBasicParsing -ErrorAction SilentlyContinue
-        if ($response.StatusCode -eq 200) {
-            # Open both applications in browser
-            try {
-                Start-Process "http://localhost:5555"
-                Start-Sleep -Milliseconds 500
-                Start-Process "http://localhost:3000"
-                Write-Success "Both applications opened in browser!"
-                Write-Info "  • Next.js App: http://localhost:3000"
-                Write-Info "  • Prisma Studio: http://localhost:5555"
-            }
-            catch {
-                Write-Warning "Could not auto-open browser"
-                Write-Info "Please visit manually:"
-                Write-Info "  • Next.js App: http://localhost:3000"
-                Write-Info "  • Prisma Studio: http://localhost:5555"
-            }
-            Write-Host ""
-            Write-Host "============================================================" -ForegroundColor Magenta
-            Write-Host "  ✅ Both servers are running:" -ForegroundColor Green
-            Write-Host "  📊 Prisma Studio: http://localhost:5555" -ForegroundColor Cyan
-            Write-Host "  🌐 Next.js App:    http://localhost:3000" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "  Press Ctrl+C to stop both servers" -ForegroundColor Yellow
-            Write-Host "============================================================" -ForegroundColor Magenta
-            Write-Host ""
-            
-            # Register cleanup handler
-            [Console]::TreatControlCAsInput = $false
-            $null = Register-ObjectEvent -InputObject ([System.Console]) -EventName "CancelKeyPress" -Action {
-                Write-Host "`n🛑 Cleaning up processes..." -ForegroundColor Yellow
-                Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-                Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-                exit 0
-            }
-            
-            Write-Host ""
-            Write-Host "========== Next.js Development Server Logs ==========" -ForegroundColor Cyan
-            Write-Host "Press Ctrl+C to stop both servers" -ForegroundColor Yellow
-            Write-Host ""
-            
-            try {
-                Receive-Job -Job $nextjsJob -Wait
-            }
-            catch {
-                Write-Host "`nStopping servers..." -ForegroundColor Yellow
-            }
-            finally {
-                Write-Host "`nCleaning up..." -ForegroundColor Yellow
-                Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-                Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
-            }
+        if ($response -and $response.StatusCode -eq 200) {
+            Write-Success "Next.js server is running!"
+            Start-ServerAndShowLogs -nextjsJob $nextjsJob -prismaJob $prismaJob
+            $serverReady = $true
+            break
         }
     }
     catch {
-        Write-Error "Next.js server failed to start properly"
-        Write-Info "Showing server logs:"
-        Receive-Job -Job $nextjsJob
-        Stop-Job -Job $nextjsJob, $prismaJob
-        Remove-Job -Job $nextjsJob, $prismaJob
-        exit 1
+        # Server not ready yet
+    }
+    
+    if (-not $serverReady) {
+        $waitCount++
+        if ($waitCount -lt $maxWaitTime) {
+            Write-Info "Waiting for server... ($waitCount/$maxWaitTime)"
+            Start-Sleep -Seconds 1
+        }
     }
 }
 
+if (-not $serverReady) {
+    Write-Error "Next.js server failed to start properly"
+    Write-Info "Showing server logs..."
+    Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
+    Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+    Remove-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
+    exit 1
+}
