@@ -1,3 +1,53 @@
+/**
+ * TRANSFER REQUESTS PAGE COMPONENT
+ * 
+ * Main page for viewing and managing transfer requests workflow.
+ * 
+ * ROUTE: /workflows/transfer-requests
+ * 
+ * WHAT IT DOES:
+ * - Lists transfer requests with filtering and pagination
+ * - Allows creating new transfer requests (for Users)
+ * - Allows approving/rejecting requests (for Supervisors/Managers)
+ * - Allows requesting changes (for Supervisors/Managers)
+ * - Allows assigning managers (for Supervisors)
+ * - Provides role-based access control
+ * 
+ * FEATURES:
+ * - Tab-based filtering (all, new, completed)
+ * - Search functionality
+ * - Status filtering
+ * - Pagination
+ * - Role-based actions (approve, reject, request changes, assign manager)
+ * - Real-time updates after actions
+ * 
+ * ROLE-BASED ACCESS:
+ * - User: Can create requests, view own requests only
+ * - Supervisor: Can approve/reject/request changes, assign managers, view all requests
+ * - Manager: Can approve/reject/request changes, view all requests
+ * 
+ * WORKFLOW STAGES:
+ * - Draft: Initial state (being created)
+ * - Submitted: Awaiting supervisor review
+ * - SupervisorApproved: Awaiting manager review
+ * - SupervisorChangesRequested: User needs to make changes
+ * - SupervisorRejected: Rejected by supervisor (final)
+ * - ManagerApproved: Approved by manager (final)
+ * - ManagerChangesRequested: User needs to make changes
+ * - ManagerRejected: Rejected by manager (final)
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive UI (tabs, buttons, dialogs)
+ * - Uses React hooks (useState, useEffect, useMemo)
+ * - Uses session data (useSession)
+ * - Handles user interactions
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ */
+
 "use client"
 
 import Link from "next/link"
@@ -10,20 +60,6 @@ import { useEffect, useMemo, useState } from "react"
 import { messages } from "@/lib/i18n"
 
 export default function TransferRequestsPage() {
-  const { data: session } = useSession()
-  const router = useRouter()
-
-  const role = session?.user?.role || "User"
-  const [tab, setTab] = useState("all")
-  const [rows, setRows] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [page, setPage] = useState(1)
-  const [limit] = useState(10)
-  const [total, setTotal] = useState(0)
-  const [search, setSearch] = useState("")
-  const [status, setStatus] = useState("")
-  const [managers, setManagers] = useState<Array<{ id: string; name: string }>>([])
-  const canAct = useMemo(() => role === "Supervisor" || role === "Manager", [role])
 
   useEffect(() => {
     ;(async () => {

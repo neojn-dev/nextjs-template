@@ -1,6 +1,56 @@
-"use client"
+/**
+ * USERS MANAGEMENT PAGE COMPONENT
+ * 
+ * User management interface for administrators.
+ * 
+ * ROUTE: /users
+ * 
+ * WHAT IT DOES:
+ * - Lists all users in the system
+ * - Allows creating new users
+ * - Allows editing existing users
+ * - Allows deleting users
+ * - Allows bulk deletion
+ * - Provides user search and filtering
+ * - Shows user details (username, email, role, status)
+ * 
+ * FEATURES:
+ * - Data table with pagination, sorting, filtering
+ * - Advanced filters (username, email, firstName, lastName, status)
+ * - Role assignment
+ * - Account activation/deactivation
+ * - Bulk operations (bulk delete)
+ * - Export functionality (CSV/Excel)
+ * - User creation dialog
+ * - User edit dialog
+ * - User view dialog
+ * - Password management (for admin-created accounts)
+ * 
+ * PERMISSIONS:
+ * - Admin users: Full access
+ * - Other roles: View-only (if access granted)
+ * 
+ * USER CREATION:
+ * - Admin can create users with temporary password
+ * - User must change password on first login
+ * - Role can be assigned during creation
+ * - Email verification required
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive data table
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles form submissions
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ * - Requires appropriate permissions (typically Admin)
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

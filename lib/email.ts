@@ -1,19 +1,112 @@
+/**
+ * EMAIL SERVICE MODULE
+ * 
+ * This module handles all email sending functionality using nodemailer.
+ * 
+ * WHAT IT DOES:
+ * - Sends email verification links to new users
+ * - Sends password reset links
+ * - Sends workflow notifications
+ * - Sends admin-created account emails
+ * 
+ * HOW IT WORKS:
+ * 1. Creates a nodemailer transporter using SMTP configuration
+ * 2. Provides helper functions for each email type
+ * 3. All emails use HTML templates for better formatting
+ * 
+ * SMTP CONFIGURATION:
+ * Configuration comes from environment variables via lib/config.ts
+ * - SMTP_HOST: Email server hostname (e.g., smtp.gmail.com)
+ * - SMTP_PORT: Port number (usually 587 for TLS, 465 for SSL)
+ * - SMTP_SECURE: Whether to use SSL/TLS
+ * - SMTP_USER: Email address for authentication
+ * - SMTP_PASS: Password or app-specific password
+ * 
+ * EMAIL PROVIDERS:
+ * - Gmail: Use App Password (not regular password)
+ * - SendGrid: Use API key or SMTP credentials
+ * - AWS SES: Use SMTP credentials
+ * - Custom SMTP: Any SMTP server
+ * 
+ * SECURITY BEST PRACTICES:
+ * - Never log email passwords or tokens
+ * - Use environment variables for credentials
+ * - Validate email addresses before sending
+ * - Set expiration times on verification tokens
+ * 
+ * USAGE EXAMPLE:
+ * ```typescript
+ * import { sendVerificationEmail } from '@/lib/email'
+ * await sendVerificationEmail('user@example.com', 'verification-token')
+ * ```
+ */
+
 import nodemailer from "nodemailer"
 import { config } from "@/lib/config"
 
+/**
+ * NODEMAILER TRANSPORTER
+ * 
+ * Creates a reusable email transporter using SMTP configuration.
+ * 
+ * The transporter is configured once and reused for all email sends.
+ * This is more efficient than creating a new transporter for each email.
+ * 
+ * CONFIGURATION OPTIONS:
+ * - host: SMTP server hostname
+ * - port: SMTP server port (587 for TLS, 465 for SSL)
+ * - secure: Whether to use SSL/TLS (true for port 465, false for port 587)
+ * - auth: Authentication credentials (username/password)
+ * 
+ * HOW SMTP WORKS:
+ * 1. Connects to SMTP server
+ * 2. Authenticates using username/password
+ * 3. Sends email through server
+ * 4. Server delivers email to recipient's mail server
+ */
 const transporter = nodemailer.createTransport({
-  host: config.email.host,
-  port: config.email.port,
-  secure: config.email.secure,
+  host: config.email.host, // SMTP server hostname
+  port: config.email.port, // SMTP port (587 for TLS, 465 for SSL)
+  secure: config.email.secure, // true for SSL (port 465), false for TLS (port 587)
   auth: {
-    user: config.email.user,
-    pass: config.email.pass,
+    user: config.email.user, // SMTP username (usually email address)
+    pass: config.email.pass, // SMTP password or app password
   },
 })
 
+/**
+ * SEND VERIFICATION EMAIL
+ * 
+ * Sends an email verification link to a newly registered user.
+ * 
+ * WHEN IS THIS CALLED?
+ * - After user signs up via signup form
+ * - After admin creates a new user account
+ * 
+ * EMAIL CONTENTS:
+ * - Welcome message
+ * - Verification link (expires in 24 hours)
+ * - Instructions on what to do next
+ * 
+ * SECURITY:
+ * - Token is unique and randomly generated
+ * - Token expires after 24 hours
+ * - Link includes full URL to prevent confusion
+ * 
+ * @param email - Recipient email address
+ * @param token - Verification token (stored in database)
+ * 
+ * EXAMPLE USAGE:
+ * ```typescript
+ * await sendVerificationEmail('user@example.com', 'abc123token')
+ * ```
+ */
 export async function sendVerificationEmail(email: string, token: string) {
+  // Construct verification URL with token as query parameter
+  // Format: http://localhost:3000/verify?token=abc123
   const verifyUrl = `${config.app.url}/verify?token=${token}`
   
+  // Send email using nodemailer transporter
   await transporter.sendMail({
     from: config.email.from,
     to: email,

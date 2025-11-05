@@ -1,3 +1,63 @@
+/**
+ * DOCTORS API ROUTE
+ * 
+ * This API route handles doctor record management operations.
+ * 
+ * ENDPOINT: GET /api/doctors - List doctors
+ * ENDPOINT: POST /api/doctors - Create doctor
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Doctors):
+ * 1. Verify authentication
+ * 2. Parse query parameters (pagination, filtering, sorting)
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return doctors list with pagination metadata
+ * 
+ * POST (Create Doctor):
+ * 1. Verify authentication
+ * 2. Parse and validate request body
+ * 3. Check for duplicate employee ID
+ * 4. Create doctor record in database
+ * 5. Return created doctor data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Input validation
+ * - Duplicate prevention (employee ID)
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (firstName, lastName, email, employeeId)
+ * - department: Filter by department (supports "!" prefix for exclusion)
+ * - specialization: Filter by specialization (supports "!" prefix for exclusion)
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (name, email, department, specialization, createdAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * FILTER OPERATORS:
+ * - "!value": Excludes records matching value
+ * - "value": Includes records matching value (contains)
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "firstName": "John",
+ *   "lastName": "Doe",
+ *   "email": "john.doe@example.com",
+ *   "employeeId": "DOC001",
+ *   "department": "Cardiology",
+ *   "specialization": "Cardiologist",
+ *   "licenseNumber": "LIC123456",
+ *   "yearsOfExperience": 10,
+ *   "salary": 150000,
+ *   "isActive": true
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

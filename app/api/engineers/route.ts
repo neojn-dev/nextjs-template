@@ -1,3 +1,65 @@
+/**
+ * ENGINEERS API ROUTE
+ * 
+ * This API route handles engineer record management operations.
+ * 
+ * ENDPOINT: GET /api/engineers - List engineers
+ * ENDPOINT: POST /api/engineers - Create engineer
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Engineers):
+ * 1. Verify authentication
+ * 2. Parse query parameters (pagination, filtering, sorting)
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return engineers list with pagination metadata
+ * 
+ * POST (Create Engineer):
+ * 1. Verify authentication
+ * 2. Parse and validate request body
+ * 3. Check for duplicate employee ID
+ * 4. Create engineer record in database
+ * 5. Return created engineer data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Input validation
+ * - Duplicate prevention (employee ID)
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (firstName, lastName, email, employeeId)
+ * - department: Filter by department (supports "!" prefix for exclusion)
+ * - specialization: Filter by specialization (supports "!" prefix for exclusion)
+ * - engineeringType: Filter by engineering type (supports "!" prefix for exclusion)
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (name, email, department, specialization, engineeringType, createdAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * FILTER OPERATORS:
+ * - "!value": Excludes records matching value
+ * - "value": Includes records matching value (contains)
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "firstName": "Alice",
+ *   "lastName": "Johnson",
+ *   "email": "alice.johnson@example.com",
+ *   "employeeId": "ENG001",
+ *   "department": "Software Development",
+ *   "specialization": "Full Stack Developer",
+ *   "engineeringType": "Software Engineering",
+ *   "programmingLanguages": ["JavaScript", "TypeScript", "Python"],
+ *   "yearsOfExperience": 7,
+ *   "salary": 120000,
+ *   "isActive": true
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

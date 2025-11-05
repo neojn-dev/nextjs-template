@@ -1,3 +1,40 @@
+/**
+ * FORGOT PASSWORD PAGE COMPONENT
+ * 
+ * This page allows users to request a password reset link via email.
+ * 
+ * FLOW OVERVIEW:
+ * 1. User enters their email address
+ * 2. Form validates email format
+ * 3. On submit, sends request to /api/auth/forgot-password
+ * 4. API generates reset token and sends email
+ * 5. Shows success message (even if email doesn't exist - security)
+ * 6. User can resend email if needed
+ * 
+ * SECURITY FEATURES:
+ * - Always shows success message (prevents email enumeration)
+ * - Doesn't reveal if email exists in system
+ * - Reset token expires in 1 hour
+ * - Token is single-use (deleted after reset)
+ * 
+ * EMAIL ENUMERATION PREVENTION:
+ * Even if email doesn't exist, we show the same success message.
+ * This prevents attackers from discovering which emails are registered.
+ * 
+ * FORM VALIDATION:
+ * - email: Required, valid email format
+ * 
+ * STATES:
+ * - Form: User enters email
+ * - Submitted: Success message shown, can resend email
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because it needs:
+ * - useState for component state
+ * - useForm for form management
+ * - Event handlers for form submission
+ */
+
 "use client"
 
 import { useState } from "react"
@@ -43,21 +80,58 @@ const itemVariants = {
 }
 
 export default function ForgotPasswordPage() {
+  /**
+   * STATE MANAGEMENT
+   * 
+   * - isLoading: True while sending reset request (shows spinner)
+   * - isSubmitted: True after request sent (shows success message)
+   */
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
+  /**
+   * REACT HOOK FORM SETUP
+   * 
+   * Simple form with just email field.
+   * getValues() allows us to read form values after submission.
+   */
   const {
     register,
     handleSubmit,
     formState: { errors },
-    getValues
+    getValues // Allows reading form values later (for resend functionality)
   } = useForm<ForgotPasswordForm>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(forgotPasswordSchema), // Validate email format
   })
 
+  /**
+   * FORM SUBMISSION HANDLER
+   * 
+   * Requests password reset email.
+   * 
+   * IMPORTANT SECURITY NOTE:
+   * Always shows success message, even if email doesn't exist.
+   * This prevents email enumeration attacks (discovering registered emails).
+   * 
+   * WHAT THE API DOES:
+   * - Validates email format
+   * - Finds user by email (if exists)
+   * - Generates reset token
+   * - Stores token in database (expires in 1 hour)
+   * - Sends reset email with link
+   * 
+   * @param data - Form data with email address
+   */
   const onSubmit = async (data: ForgotPasswordForm) => {
     setIsLoading(true)
     try {
+      /**
+       * SEND RESET REQUEST
+       * 
+       * API endpoint: /api/auth/forgot-password
+       * Method: POST
+       * Body: { email: string }
+       */
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: {
@@ -67,22 +141,37 @@ export default function ForgotPasswordPage() {
       })
 
       if (response.ok) {
+        // Request successful - show success message
         setIsSubmitted(true)
       } else {
+        // Even if error, show success to prevent email enumeration
         const errorData = await response.json()
         console.error('Forgot password error:', errorData)
-        // Still show success to prevent email enumeration
+        
+        /**
+         * SECURITY: Always show success
+         * 
+         * We show success even if email doesn't exist.
+         * This prevents attackers from discovering registered emails.
+         * User experience: Same message whether email exists or not.
+         */
         setIsSubmitted(true)
       }
     } catch (error) {
+      // Network error - still show success for security
       console.error('Network error:', error)
-      // Still show success to prevent email enumeration
       setIsSubmitted(true)
     } finally {
       setIsLoading(false)
     }
   }
 
+  /**
+   * RESEND EMAIL HANDLER
+   * 
+   * Allows user to request another reset email if they didn't receive it.
+   * Uses the same email from the form.
+   */
   const handleResendEmail = async () => {
     setIsLoading(true)
     try {
@@ -91,12 +180,13 @@ export default function ForgotPasswordPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: getValues("email") }),
+        body: JSON.stringify({ email: getValues("email") }), // Use email from form
       })
 
       if (response.ok) {
-        // Show success message or toast
+        // Email resent successfully
         console.log('Password reset email resent successfully')
+        // Could show toast notification here
       } else {
         console.error('Failed to resend email')
       }

@@ -1,3 +1,64 @@
+/**
+ * TEACHERS API ROUTE
+ * 
+ * This API route handles teacher record management operations.
+ * 
+ * ENDPOINT: GET /api/teachers - List teachers
+ * ENDPOINT: POST /api/teachers - Create teacher
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Teachers):
+ * 1. Verify authentication
+ * 2. Parse query parameters (pagination, filtering, sorting)
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return teachers list with pagination metadata
+ * 
+ * POST (Create Teacher):
+ * 1. Verify authentication
+ * 2. Parse and validate request body
+ * 3. Check for duplicate employee ID
+ * 4. Create teacher record in database
+ * 5. Return created teacher data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Input validation
+ * - Duplicate prevention (employee ID)
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (firstName, lastName, email, employeeId)
+ * - department: Filter by department (supports "!" prefix for exclusion)
+ * - subject: Filter by subject (supports "!" prefix for exclusion)
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (name, email, department, subject, createdAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * FILTER OPERATORS:
+ * - "!value": Excludes records matching value
+ * - "value": Includes records matching value (contains)
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "firstName": "Jane",
+ *   "lastName": "Smith",
+ *   "email": "jane.smith@example.com",
+ *   "employeeId": "TCH001",
+ *   "department": "Mathematics",
+ *   "subject": "Algebra",
+ *   "gradeLevel": "High School",
+ *   "certification": "Teaching Certificate",
+ *   "yearsOfExperience": 5,
+ *   "salary": 60000,
+ *   "isActive": true
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

@@ -1,6 +1,50 @@
-"use client"
+/**
+ * DOCTORS PAGE COMPONENT
+ * 
+ * Doctor record management interface for authenticated users.
+ * 
+ * ROUTE: /doctors
+ * 
+ * WHAT IT DOES:
+ * - Lists all doctors in the system
+ * - Allows creating new doctor records
+ * - Allows editing existing doctor records
+ * - Allows deleting doctors
+ * - Allows bulk deletion
+ * - Provides doctor search and filtering
+ * - Shows doctor details (name, email, department, specialization, license, etc.)
+ * 
+ * FEATURES:
+ * - Data table with pagination, sorting, filtering
+ * - Advanced filters (firstName, lastName, email, employeeId, department, specialization, status)
+ * - Search functionality
+ * - Doctor creation dialog
+ * - Doctor edit dialog
+ * - Doctor view dialog (detailed information)
+ * - Bulk operations (bulk delete)
+ * - Export functionality (CSV/Excel)
+ * - Status management (active/inactive)
+ * 
+ * DOCTOR FIELDS:
+ * - Basic info: firstName, lastName, email, phone, employeeId
+ * - Medical info: department, specialization, licenseNumber
+ * - Experience: yearsOfExperience, patientSatisfaction, successRate
+ * - Employment: salary, isActive, hireDate
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive data table
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles form submissions
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

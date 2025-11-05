@@ -1,3 +1,63 @@
+/**
+ * FILE UPLOAD API ROUTE
+ * 
+ * This API route handles file uploads for authenticated users.
+ * 
+ * ENDPOINT: POST /api/upload
+ * 
+ * FLOW OVERVIEW:
+ * 1. Verify user is authenticated
+ * 2. Extract file from FormData
+ * 3. Validate file size (max 5MB)
+ * 4. Validate file type (allowed types)
+ * 5. Generate unique filename
+ * 6. Save file to uploads directory
+ * 7. Create database record (Upload model)
+ * 8. Return file metadata
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - File size validation (5MB limit)
+ * - File type validation (whitelist)
+ * - Unique filename generation (prevents overwrites)
+ * - Secure file storage
+ * 
+ * ALLOWED FILE TYPES:
+ * - Images: JPEG, PNG, GIF
+ * - Documents: PDF
+ * - Spreadsheets: CSV, Excel (xls, xlsx)
+ * 
+ * FILE STORAGE:
+ * - Files stored in: uploads/ directory
+ * - Filename format: {random-string}_{timestamp}.{extension}
+ * - Database record links file to user
+ * 
+ * ERROR HANDLING:
+ * - Unauthorized: 401 (no session)
+ * - Missing file: 400 Bad Request
+ * - File too large: 400 Bad Request
+ * - Invalid file type: 400 Bad Request
+ * - Generic errors: 500 Internal Server Error
+ * 
+ * REQUEST:
+ * POST /api/upload
+ * Content-Type: multipart/form-data
+ * FormData:
+ *   - file: File object
+ * 
+ * RESPONSE (SUCCESS):
+ * ```json
+ * {
+ *   "id": "upload-id",
+ *   "filename": "unique-filename.pdf",
+ *   "originalName": "document.pdf",
+ *   "mimeType": "application/pdf",
+ *   "size": 1024000,
+ *   "url": "/uploads/unique-filename.pdf"
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
@@ -7,8 +67,36 @@ import { existsSync } from "fs"
 import path from "path"
 import { generateRandomString } from "@/lib/utils"
 
+/**
+ * UPLOAD DIRECTORY CONFIGURATION
+ * 
+ * Base directory for file uploads.
+ * Located in: project-root/uploads/
+ */
 const UPLOAD_DIR = path.join(process.cwd(), "uploads")
+
+/**
+ * FILE SIZE LIMIT
+ * 
+ * Maximum file size allowed: 5MB
+ * Prevents large file uploads that could cause issues.
+ */
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
+/**
+ * ALLOWED FILE TYPES
+ * 
+ * Whitelist of MIME types allowed for upload.
+ * 
+ * TYPES ALLOWED:
+ * - Images: JPEG, PNG, GIF
+ * - Documents: PDF
+ * - Spreadsheets: CSV, Excel (xls, xlsx)
+ * 
+ * SECURITY:
+ * Only allows safe file types.
+ * Prevents executable files, scripts, etc.
+ */
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png", 
@@ -19,6 +107,22 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 ]
 
+/**
+ * POST HANDLER
+ * 
+ * Handles POST requests to /api/upload
+ * 
+ * PROCESS:
+ * 1. Check authentication
+ * 2. Extract file from FormData
+ * 3. Validate file
+ * 4. Generate unique filename
+ * 5. Save file
+ * 6. Create database record
+ * 
+ * @param request - Next.js request object with FormData
+ * @returns JSON response with file metadata
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

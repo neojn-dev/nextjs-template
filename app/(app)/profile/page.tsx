@@ -1,6 +1,47 @@
-"use client"
+/**
+ * PROFILE PAGE COMPONENT
+ * 
+ * User profile management page for authenticated users.
+ * 
+ * ROUTE: /profile
+ * 
+ * WHAT IT DOES:
+ * - Displays user profile information
+ * - Allows updating profile image
+ * - Allows changing password
+ * - Shows account information (username, email, role, join date)
+ * - Handles mandatory password change for admin-created accounts
+ * 
+ * FEATURES:
+ * - Profile image upload with preview
+ * - Password change dialog with validation
+ * - Real-time password requirements feedback
+ * - Password visibility toggle
+ * - Form validation with Zod and React Hook Form
+ * - Error handling and success messages
+ * - Auto-opens password change modal if required
+ * 
+ * MANDATORY PASSWORD CHANGE:
+ * - If user was created by admin (mustChangePassword flag)
+ * - Modal auto-opens when ?mustChangePassword=true in URL
+ * - Cannot proceed until password is changed
+ * - Prevents using temporary/admin-set passwords
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive forms
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles file uploads
+ * - Performs client-side validation
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ * - Shows user's own profile data
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"

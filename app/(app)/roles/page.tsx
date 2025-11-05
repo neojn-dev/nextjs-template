@@ -1,6 +1,55 @@
-"use client"
+/**
+ * ROLES MANAGEMENT PAGE COMPONENT
+ * 
+ * Role management interface for administrators.
+ * 
+ * ROUTE: /roles
+ * 
+ * WHAT IT DOES:
+ * - Lists all roles in the system
+ * - Allows creating new roles
+ * - Allows editing existing roles
+ * - Allows deleting roles
+ * - Allows bulk deletion
+ * - Provides role search and filtering
+ * - Shows role details (name, description, status, permissions)
+ * 
+ * FEATURES:
+ * - Data table with pagination, sorting, filtering
+ * - Advanced filters (name, description, status)
+ * - Role activation/deactivation
+ * - Bulk operations (bulk delete)
+ * - Export functionality (CSV/Excel)
+ * - Role creation dialog
+ * - Role edit dialog
+ * - Role view dialog
+ * - Permission management (future)
+ * 
+ * PERMISSIONS:
+ * - Admin users: Full access
+ * - Other roles: View-only (if access granted)
+ * 
+ * ROLE STRUCTURE:
+ * - name: Role name (unique)
+ * - description: Role description
+ * - isActive: Active status
+ * - permissions: Permission string (future use)
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive data table
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles form submissions
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ * - Requires appropriate permissions (typically Admin)
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

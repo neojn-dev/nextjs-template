@@ -1,11 +1,84 @@
+/**
+ * GLOBAL CSS STYLES
+ * 
+ * This file contains global styles, CSS variables, and custom utilities.
+ * It's imported in the root layout (app/layout.tsx).
+ * 
+ * STRUCTURE:
+ * 1. Tailwind CSS imports (@tailwind directives)
+ * 2. Font imports (Google Fonts)
+ * 3. CSS Variables (design tokens)
+ * 4. Base styles (@layer base)
+ * 5. Component styles (@layer components)
+ * 6. Utility classes (@layer utilities)
+ * 
+ * WHAT IT PROVIDES:
+ * - Design system colors (CSS variables)
+ * - Typography system
+ * - Component classes
+ * - Custom utilities
+ * - Dark mode support
+ * 
+ * DESIGN TOKENS:
+ * All colors, spacing, shadows, etc. are defined as CSS variables.
+ * This allows easy theming and customization.
+ */
+
+/**
+ * TAILWIND CSS IMPORTS
+ * 
+ * These directives inject Tailwind's base, components, and utilities.
+ * 
+ * @tailwind base: Base styles (normalize, defaults)
+ * @tailwind components: Component classes (buttons, cards, etc.)
+ * @tailwind utilities: Utility classes (padding, margin, colors, etc.)
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * FONT IMPORTS
+ * 
+ * Loads fonts from Google Fonts CDN.
+ * 
+ * FONTS:
+ * - Inter: Primary sans-serif font (weights: 300-900)
+ * - JetBrains Mono: Monospace font for code (weights: 400-600)
+ * 
+ * DISPLAY SWAP:
+ * Uses font-display: swap for better performance.
+ * Shows fallback font while web font loads.
+ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+/**
+ * BASE LAYER
+ * 
+ * Contains CSS variables (design tokens) and base element styles.
+ * These are the foundation of the design system.
+ */
 @layer base {
+  /**
+   * ROOT CSS VARIABLES (LIGHT MODE)
+   * 
+   * Defines all design tokens as CSS custom properties.
+   * Uses HSL color format for easy manipulation.
+   * 
+   * COLOR FORMAT:
+   * HSL values: hue saturation lightness
+   * Example: --primary: 221.2 83.2% 53.3%
+   * Used as: hsl(var(--primary))
+   * 
+   * COLOR CATEGORIES:
+   * - Background/Foreground: Base colors
+   * - Primary: Brand color
+   * - Secondary: Supporting color
+   * - Accent: Accent colors (blue, green, purple, orange)
+   * - Neutral: Muted colors, borders, inputs
+   * - Semantic: Success, warning, destructive
+   */
   :root {
     /* Modern Color Palette */
     --background: 0 0% 100%;
@@ -70,6 +143,17 @@
     --gradient-warm: linear-gradient(135deg, hsl(var(--accent-orange)) 0%, hsl(var(--accent-purple)) 100%);
   }
 
+  /**
+   * DARK MODE VARIABLES
+   * 
+   * Overrides color variables when .dark class is present.
+   * Dark mode uses darker backgrounds and lighter text.
+   * 
+   * HOW IT WORKS:
+   * - Apply .dark class to html or body element
+   * - These variables override :root variables
+   * - All components automatically adapt to dark mode
+   */
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -94,11 +178,26 @@
 }
 
 @layer base {
+  /**
+   * UNIVERSAL BORDER COLOR
+   * 
+   * Applies border color to all elements.
+   * Uses CSS variable for consistent theming.
+   */
   * {
     @apply border-border;
   }
   
-  /* Screen reader only utility */
+  /**
+   * SCREEN READER ONLY UTILITY
+   * 
+   * Hides element visually but keeps it accessible to screen readers.
+   * 
+   * USE CASE:
+   * - Accessibility labels
+   * - Skip links
+   * - Hidden text for screen readers
+   */
   .sr-only {
     position: absolute;
     width: 1px;
@@ -111,18 +210,33 @@
     border: 0;
   }
   
+  /**
+   * HTML BASE STYLES
+   * 
+   * Global HTML element styles.
+   */
   html {
-    scroll-behavior: smooth;
-    @apply antialiased;
+    scroll-behavior: smooth; /* Smooth scrolling for anchor links */
+    @apply antialiased; /* Better font rendering */
   }
   
+  /**
+   * BODY BASE STYLES
+   * 
+   * Global body element styles.
+   */
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1; /* Better typography */
     overflow-x: hidden; /* Prevent horizontal scroll */
   }
   
-  /* Typography */
+  /**
+   * TYPOGRAPHY SYSTEM
+   * 
+   * Responsive heading styles.
+   * Uses responsive text sizes (mobile → tablet → desktop).
+   */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold tracking-tight;
   }
@@ -151,7 +265,12 @@
     @apply text-base md:text-lg lg:text-xl;
   }
   
-  /* Smooth scrolling for anchor links */
+  /**
+   * SMOOTH SCROLLING FOR ANCHOR LINKS
+   * 
+   * Adds padding-top offset for anchor links.
+   * Prevents content from being hidden under fixed headers.
+   */
   html {
     scroll-padding-top: 5rem;
   }

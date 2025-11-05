@@ -1,3 +1,63 @@
+/**
+ * DASHBOARD PAGE COMPONENT
+ * 
+ * Main analytics dashboard page for authenticated users.
+ * 
+ * ROUTE: /dashboard
+ * 
+ * WHAT IT DOES:
+ * - Displays comprehensive analytics and statistics
+ * - Shows KPI tiles with key metrics
+ * - Provides interactive charts and visualizations
+ * - Allows filtering by date range, department, status, and role
+ * - Computes analytics data client-side for better performance
+ * 
+ * FEATURES:
+ * - Real-time data computation from multiple APIs
+ * - Interactive filters (date range, department, status, role)
+ * - Multiple chart types (Pie, Line, Bar, Area)
+ * - KPI tiles showing key metrics
+ * - Loading states with progress indicators
+ * - Error handling with retry functionality
+ * - Force refresh capability
+ * - Responsive design
+ * - Smooth animations
+ * 
+ * DATA SOURCES:
+ * - Teachers API (/api/teachers)
+ * - Doctors API (/api/doctors)
+ * - Engineers API (/api/engineers)
+ * - Lawyers API (/api/lawyers)
+ * - Users API (/api/users) - optional, requires Admin role
+ * 
+ * ANALYTICS COMPUTED:
+ * - Overview stats (total, active, inactive staff, salary stats)
+ * - Role distribution (pie chart)
+ * - Department statistics (bar chart)
+ * - Monthly trends (line chart)
+ * - Experience distribution (area chart)
+ * 
+ * PERFORMANCE:
+ * - Client-side computation (faster than server-side)
+ * - Data caching (5-minute cache duration)
+ * - Parallel API calls (Promise.all)
+ * - Memoized chart data preparation
+ * - Optimized re-renders
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive filters
+ * - Uses React hooks (useState, useEffect, useMemo)
+ * - Uses session data (useSession)
+ * - Performs client-side data computation
+ * - Handles user interactions
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ * - Shows loading state while checking session
+ */
+
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
@@ -19,8 +79,39 @@ import {
   Award
 } from "lucide-react"
 
-// DashboardData interface is now imported from lib/dashboard-data.ts
-
+/**
+ * DASHBOARD PAGE COMPONENT
+ * 
+ * Main dashboard page displaying analytics and statistics.
+ * 
+ * COMPONENT STRUCTURE:
+ * 1. Welcome header with refresh button
+ * 2. Filter controls (date range, department, status, role)
+ * 3. KPI tiles (key metrics)
+ * 4. Charts grid (role distribution, monthly trends)
+ * 5. Department analysis bar chart
+ * 6. Experience distribution area chart
+ * 7. Summary cards
+ * 
+ * STATE MANAGEMENT:
+ * - mounted: Prevents hydration mismatches
+ * - loading: Loading state for data computation
+ * - loadingProgress: Progress message for user feedback
+ * - data: Computed dashboard data
+ * - error: Error message if computation fails
+ * - filters: Current filter values
+ * 
+ * DATA FLOW:
+ * 1. Component mounts → setMounted(true)
+ * 2. Filters change → computeData(filters)
+ * 3. computeData fetches raw data from APIs
+ * 4. Filters data based on filter values
+ * 5. Computes statistics and chart data
+ * 6. Updates state with computed data
+ * 7. Component re-renders with new data
+ * 
+ * @returns Dashboard page JSX
+ */
 export default function DashboardPage() {
   const { data: session } = useSession()
   const [mounted, setMounted] = useState(false)

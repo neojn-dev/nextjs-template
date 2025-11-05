@@ -1,3 +1,47 @@
+/**
+ * SIGN UP PAGE COMPONENT
+ * 
+ * This is the user registration page where new users create accounts.
+ * 
+ * FLOW OVERVIEW:
+ * 1. User fills out registration form (name, username, email, password)
+ * 2. Form validates input using Zod schema (signupSchema)
+ * 3. Password requirements shown in real-time
+ * 4. On submit, sends data to /api/auth/signup
+ * 5. API creates user account and sends verification email
+ * 6. User redirected to signin page with success message
+ * 
+ * KEY FEATURES:
+ * - Real-time password validation with visual feedback
+ * - Password strength requirements displayed
+ * - Email validation
+ * - Username validation (alphanumeric + underscore)
+ * - Terms and conditions checkbox
+ * - Smooth animations for better UX
+ * 
+ * SECURITY FEATURES:
+ * - Password requirements enforced (min 8 chars, uppercase, lowercase, number, special)
+ * - Password confirmation must match
+ * - Email verification required before account activation
+ * - Password is hashed server-side (never sent to client)
+ * 
+ * FORM VALIDATION:
+ * - firstName: Required, letters/spaces/hyphens/apostrophes only
+ * - lastName: Required, letters/spaces/hyphens/apostrophes only
+ * - username: Required, 3-20 chars, alphanumeric + underscore
+ * - email: Required, valid email format
+ * - password: Required, meets complexity requirements
+ * - confirmPassword: Required, must match password
+ * - agreeToTerms: Required, must be checked
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because it needs:
+ * - useState for form state and UI state
+ * - useForm for form management
+ * - Event handlers for form submission
+ * - Router for navigation
+ */
+
 "use client"
 
 import { useState } from "react"
@@ -52,14 +96,43 @@ const itemVariants = {
 }
 
 export default function SignUpPage() {
+  /**
+   * STATE MANAGEMENT
+   * 
+   * Component state variables:
+   * - showPassword: Toggles password visibility (eye icon)
+   * - showConfirmPassword: Toggles confirm password visibility
+   * - isLoading: Prevents duplicate submissions, shows loading spinner
+   * - socialLoading: Tracks which social signup button is loading (if implemented)
+   * - error: Stores error message to display to user
+   * - success: Stores success message after account creation
+   */
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  
+  // Next.js router for programmatic navigation
   const router = useRouter()
 
+  /**
+   * REACT HOOK FORM SETUP
+   * 
+   * Manages form state, validation, and submission:
+   * - register: Registers input fields with form
+   * - handleSubmit: Wraps onSubmit with validation
+   * - formState.errors: Contains validation errors for each field
+   * - setValue: Programmatically sets field values
+   * - watch: Watches field values for real-time updates
+   * - trigger: Manually triggers validation
+   * 
+   * mode: "onChange"
+   * - Validates fields as user types (real-time feedback)
+   * - Better UX than default "onSubmit" mode
+   * - Shows errors immediately when user fixes them
+   */
   const {
     register,
     handleSubmit,
@@ -69,21 +142,57 @@ export default function SignUpPage() {
     trigger,
     formState
   } = useForm<SignupForm>({
-    resolver: zodResolver(signupSchema),
-    mode: "onChange",
+    resolver: zodResolver(signupSchema), // Use Zod schema for validation
+    mode: "onChange", // Validate on every change (real-time feedback)
     defaultValues: {
-      agreeToTerms: false
+      agreeToTerms: false // Default to unchecked
     }
   })
 
+  // Watch all form fields for real-time updates
+  // Used to show password requirements as user types
   const watchedFields = watch()
 
+  /**
+   * FORM SUBMISSION HANDLER
+   * 
+   * Called when user submits the registration form.
+   * 
+   * STEP-BY-STEP FLOW:
+   * 1. Set loading state (disable form, show spinner)
+   * 2. Clear previous errors/success messages
+   * 3. Send POST request to /api/auth/signup
+   * 4. Handle response:
+   *    - If error: Display error message
+   *    - If success: Show success message, redirect to signin
+   * 5. Always reset loading state
+   * 
+   * WHAT THE API DOES:
+   * - Validates data server-side
+   * - Checks if username/email already exists
+   * - Hashes password with bcrypt
+   * - Creates user in database
+   * - Generates verification token
+   * - Sends verification email
+   * 
+   * @param data - Form data validated by Zod schema (SignupForm type)
+   */
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true)
     setError(null)
     setSuccess(null)
     
     try {
+      /**
+       * API REQUEST
+       * 
+       * Send registration data to server.
+       * Note: Password is sent in plain text (will be hashed server-side).
+       * This is safe because:
+       * - Connection is HTTPS in production
+       * - Password is immediately hashed on server
+       * - Never stored in plain text
+       */
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
@@ -94,27 +203,39 @@ export default function SignUpPage() {
           lastName: data.lastName,
           username: data.username,
           email: data.email,
-          password: data.password,
+          password: data.password, // Will be hashed server-side
         }),
       })
 
       const result = await response.json()
 
+      // Handle API errors
       if (!response.ok) {
         setError(result.error || "Failed to create account")
         return
       }
 
+      /**
+       * SUCCESS HANDLING
+       * 
+       * Account created successfully!
+       * - Show success message
+       * - Redirect to signin page after 3 seconds
+       * - Include query parameter for success message display
+       */
       setSuccess("Account created successfully! Please check your email to verify your account.")
       
       // Redirect to signin page after a delay
+      // Gives user time to read success message
       setTimeout(() => {
         router.push("/signin?message=account_created")
       }, 3000)
       
     } catch (error) {
+      // Handle network errors or unexpected errors
       setError("An error occurred during sign up")
     } finally {
+      // Always reset loading state, even if error occurred
       setIsLoading(false)
     }
   }
@@ -308,7 +429,30 @@ export default function SignUpPage() {
                             </motion.p>
                           )}
                           
-                          {/* Password Requirements */}
+                          /**
+                           * PASSWORD REQUIREMENTS DISPLAY
+                           * 
+                           * Shows real-time feedback as user types password.
+                           * Only displays when user has started typing (watchedFields.password exists).
+                           * 
+                           * HOW IT WORKS:
+                           * 1. User types password
+                           * 2. Each requirement regex is tested against password
+                           * 3. Requirements turn green with checkmark when met
+                           * 4. Requirements stay gray with X when not met
+                           * 
+                           * REQUIREMENTS CHECKED:
+                           * - Length: At least 8 characters
+                           * - Lowercase: At least one lowercase letter
+                           * - Uppercase: At least one uppercase letter
+                           * - Number: At least one number
+                           * - Special: At least one special character
+                           * 
+                           * UX BENEFITS:
+                           * - Immediate feedback (no need to submit to see errors)
+                           * - Visual indicators (green checkmarks, gray X marks)
+                           * - Clear requirements list
+                           */
                           {watchedFields.password && (
                             <motion.div
                               initial={{ opacity: 0, y: -10 }}
@@ -318,11 +462,13 @@ export default function SignUpPage() {
                               <p className="text-xs font-semibold text-gray-700 mb-2">Password Requirements:</p>
                               <div className="grid grid-cols-2 gap-1 text-xs">
                                 {passwordRequirements.map((requirement) => {
+                                  // Test if password meets this requirement
                                   const isMet = requirement.regex.test(watchedFields.password)
                                   return (
                                     <div key={requirement.id} className={`flex items-center gap-1.5 ${
                                       isMet ? 'text-green-600' : 'text-gray-500'
                                     }`}>
+                                      {/* Show checkmark if met, X if not met */}
                                       {isMet ? (
                                         <Check className="h-3 w-3" />
                                       ) : (

@@ -1,28 +1,138 @@
+/**
+ * TAILWIND CSS CONFIGURATION FILE
+ * 
+ * This file configures Tailwind CSS for the application.
+ * 
+ * WHAT IT DOES:
+ * - Configures content paths (where Tailwind looks for classes)
+ * - Defines theme extensions (colors, fonts, spacing, etc.)
+ * - Configures plugins
+ * - Sets up dark mode
+ * 
+ * CONTENT PATHS:
+ * Tailwind scans these paths for class names and generates CSS.
+ * Only classes found in these files are included in the final CSS.
+ * 
+ * THEME EXTENSIONS:
+ * Extends Tailwind's default theme with custom:
+ * - Colors (using CSS variables)
+ * - Fonts (Inter, JetBrains Mono)
+ * - Font sizes
+ * - Border radius
+ * - Spacing
+ * - Keyframes (animations)
+ * - Shadows
+ * - Gradients
+ * 
+ * PLUGINS:
+ * - tailwindcss-animate: Animation utilities
+ * - @tailwindcss/typography: Typography plugin
+ */
+
 import type { Config } from "tailwindcss"
 
+/**
+ * TAILWIND CSS CONFIGURATION
+ * 
+ * Main configuration object for Tailwind CSS.
+ */
 const config = {
+  /**
+   * DARK MODE CONFIGURATION
+   * 
+   * "class": Uses class-based dark mode.
+   * Toggle dark mode by adding/removing .dark class.
+   * 
+   * ALTERNATIVE:
+   * "media": Uses prefers-color-scheme media query (automatic)
+   * 
+   * CURRENT SETTING: ["class"]
+   * - More control over dark mode
+   * - User preference can be saved
+   * - Can toggle manually
+   */
   darkMode: ["class"],
+
+  /**
+   * CONTENT PATHS
+   * 
+   * Tells Tailwind where to look for class names.
+   * Only classes found in these files are included in the final CSS.
+   * 
+   * PATTERNS:
+   * - './pages/**/*.{ts,tsx}': Pages directory
+   * - './components/**/*.{ts,tsx}': Components directory
+   * - './app/**/*.{ts,tsx}': App directory (Next.js App Router)
+   * - './src/**/*.{ts,tsx}': Source directory (if using src folder)
+   * 
+   * WHY IMPORTANT?
+   * - Reduces CSS bundle size
+   * - Only includes used classes
+   * - Faster build times
+   */
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
   ],
+
+  /**
+   * CSS PREFIX
+   * 
+   * Optional prefix for all Tailwind classes.
+   * Empty string means no prefix (default).
+   * 
+   * EXAMPLE:
+   * If prefix: "tw-"
+   * Then: "tw-flex" instead of "flex"
+   */
   prefix: "",
+
+  /**
+   * THEME CONFIGURATION
+   * 
+   * Extends Tailwind's default theme with custom values.
+   */
   theme: {
+    /**
+     * CONTAINER CONFIGURATION
+     * 
+     * Configures default container component.
+     */
     container: {
-      center: true,
-      padding: "2rem",
+      center: true, // Centers container horizontally
+      padding: "2rem", // Default padding
       screens: {
-        "2xl": "1400px",
+        "2xl": "1400px", // Breakpoint for 2xl screens
       },
     },
+
+    /**
+     * THEME EXTENSIONS
+     * 
+     * Adds custom values to Tailwind's theme.
+     * These extend (don't replace) default values.
+     */
     extend: {
+      /**
+       * FONT FAMILIES
+       * 
+       * Defines custom font families.
+       * Uses CSS variables from globals.css.
+       */
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
-        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], // Primary font
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"], // Monospace font
+        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"], // Display font
       },
+
+      /**
+       * FONT SIZES
+       * 
+       * Defines custom font sizes with line heights.
+       * Format: [fontSize, { lineHeight }]
+       */
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1rem' }],
         'sm': ['0.875rem', { lineHeight: '1.25rem' }],
@@ -38,6 +148,27 @@ const config = {
         '8xl': ['6rem', { lineHeight: '1' }],
         '9xl': ['8rem', { lineHeight: '1' }],
       },
+
+      /**
+       * COLOR SYSTEM
+       * 
+       * Uses CSS variables from globals.css.
+       * Colors are defined in HSL format for theming.
+       * 
+       * FORMAT:
+       * color: "hsl(var(--variable-name))"
+       * 
+       * COLORS INCLUDED:
+       * - border, input, ring: UI element colors
+       * - background, foreground: Base colors
+       * - primary: Brand color (with light/dark variants)
+       * - secondary: Supporting color
+       * - destructive: Error/danger color
+       * - muted: Muted/subtle color
+       * - accent: Accent colors (blue, green, purple, orange)
+       * - popover, card: Component colors
+       * - success, warning: Semantic colors
+       */
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -87,6 +218,13 @@ const config = {
           foreground: "hsl(var(--warning-foreground))",
         },
       },
+
+      /**
+       * BORDER RADIUS
+       * 
+       * Custom border radius values.
+       * Uses CSS variables for consistency.
+       */
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -95,12 +233,37 @@ const config = {
         "2xl": "var(--radius-xl)",
         "3xl": "var(--radius-2xl)",
       },
+
+      /**
+       * SPACING
+       * 
+       * Custom spacing values.
+       * Extends Tailwind's default spacing scale.
+       */
       spacing: {
         '18': '4.5rem',
         '88': '22rem',
         '128': '32rem',
         '144': '36rem',
       },
+
+      /**
+       * KEYFRAMES (ANIMATIONS)
+       * 
+       * Defines custom animation keyframes.
+       * Used with animation utilities.
+       * 
+       * ANIMATIONS INCLUDED:
+       * - accordion-down/up: Accordion expand/collapse
+       * - fade-in/out: Fade animations
+       * - slide-in-*: Slide animations (top, bottom, left, right)
+       * - scale-in/out: Scale animations
+       * - bounce-in: Bounce animation
+       * - float: Floating animation
+       * - pulse-glow: Pulsing glow effect
+       * - shimmer: Shimmer effect
+       * - wiggle: Wiggle animation
+       */
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -165,6 +328,13 @@ const config = {
           "50%": { transform: "rotate(3deg)" },
         },
       },
+
+      /**
+       * ANIMATION UTILITIES
+       * 
+       * Maps keyframes to animation utilities.
+       * Usage: className="animate-fade-in"
+       */
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
@@ -182,9 +352,22 @@ const config = {
         "shimmer": "shimmer 2s linear infinite",
         "wiggle": "wiggle 1s ease-in-out infinite",
       },
+
+      /**
+       * BACKDROP BLUR
+       * 
+       * Custom backdrop blur values.
+       */
       backdropBlur: {
         xs: '2px',
       },
+
+      /**
+       * BOX SHADOWS
+       * 
+       * Custom shadow utilities.
+       * Includes glow effects for different colors.
+       */
       boxShadow: {
         'inner-lg': 'inset 0 2px 4px 0 rgb(0 0 0 / 0.06)',
         'glow': '0 0 20px rgba(59, 130, 246, 0.5)',
@@ -193,6 +376,13 @@ const config = {
         'glow-green': '0 0 20px rgba(34, 197, 94, 0.5)',
         'glow-orange': '0 0 20px rgba(249, 115, 22, 0.5)',
       },
+
+      /**
+       * BACKGROUND IMAGES
+       * 
+       * Custom gradient utilities.
+       * Uses CSS variables from globals.css.
+       */
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
@@ -201,6 +391,13 @@ const config = {
         'gradient-accent': 'var(--gradient-accent)',
         'gradient-warm': 'var(--gradient-warm)',
       },
+
+      /**
+       * TRANSITION TIMING FUNCTIONS
+       * 
+       * Custom easing functions.
+       * Provides smooth, natural animations.
+       */
       transitionTimingFunction: {
         'bounce-in': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -208,7 +405,23 @@ const config = {
       },
     },
   },
+
+  /**
+   * PLUGINS
+   * 
+   * Tailwind CSS plugins that extend functionality.
+   * 
+   * PLUGINS INCLUDED:
+   * - tailwindcss-animate: Animation utilities (animate-in, animate-out)
+   * - @tailwindcss/typography: Typography plugin for prose styles
+   */
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 } satisfies Config
 
+/**
+ * EXPORT CONFIGURATION
+ * 
+ * Exports the Tailwind configuration.
+ * Tailwind reads this file and applies the configuration.
+ */
 export default config

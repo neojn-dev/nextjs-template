@@ -1,3 +1,64 @@
+/**
+ * LAWYERS API ROUTE
+ * 
+ * This API route handles lawyer record management operations.
+ * 
+ * ENDPOINT: GET /api/lawyers - List lawyers
+ * ENDPOINT: POST /api/lawyers - Create lawyer
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Lawyers):
+ * 1. Verify authentication
+ * 2. Parse query parameters (pagination, filtering, sorting)
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return lawyers list with pagination metadata
+ * 
+ * POST (Create Lawyer):
+ * 1. Verify authentication
+ * 2. Parse and validate request body
+ * 3. Check for duplicate employee ID
+ * 4. Create lawyer record in database
+ * 5. Return created lawyer data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Input validation
+ * - Duplicate prevention (employee ID)
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (firstName, lastName, email, employeeId, barNumber)
+ * - department: Filter by department (supports "!" prefix for exclusion)
+ * - practiceArea: Filter by practice area (supports "!" prefix for exclusion)
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (name, email, department, practiceArea, createdAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * FILTER OPERATORS:
+ * - "!value": Excludes records matching value
+ * - "value": Includes records matching value (contains)
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "firstName": "Robert",
+ *   "lastName": "Williams",
+ *   "email": "robert.williams@example.com",
+ *   "employeeId": "LAW001",
+ *   "department": "Legal Department",
+ *   "specialization": "Corporate Law",
+ *   "practiceArea": "Corporate Law",
+ *   "barNumber": "BAR123456",
+ *   "yearsOfExperience": 12,
+ *   "salary": 180000,
+ *   "isActive": true
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

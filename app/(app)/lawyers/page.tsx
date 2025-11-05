@@ -1,6 +1,50 @@
-"use client"
+/**
+ * LAWYERS PAGE COMPONENT
+ * 
+ * Lawyer record management interface for authenticated users.
+ * 
+ * ROUTE: /lawyers
+ * 
+ * WHAT IT DOES:
+ * - Lists all lawyers in the system
+ * - Allows creating new lawyer records
+ * - Allows editing existing lawyer records
+ * - Allows deleting lawyers
+ * - Allows bulk deletion
+ * - Provides lawyer search and filtering
+ * - Shows lawyer details (name, email, department, practice area, bar number, etc.)
+ * 
+ * FEATURES:
+ * - Data table with pagination, sorting, filtering
+ * - Advanced filters (firstName, lastName, email, employeeId, barNumber, department, practiceArea, status)
+ * - Search functionality
+ * - Lawyer creation dialog
+ * - Lawyer edit dialog
+ * - Lawyer view dialog (detailed information)
+ * - Bulk operations (bulk delete)
+ * - Export functionality (CSV/Excel)
+ * - Status management (active/inactive)
+ * 
+ * LAWYER FIELDS:
+ * - Basic info: firstName, lastName, email, phone, employeeId
+ * - Legal info: department, practiceArea, barNumber, specialization
+ * - Experience: yearsOfExperience, caseSuccessRate, clientSatisfaction, averageCaseDuration
+ * - Employment: salary, isActive
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive data table
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles form submissions
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

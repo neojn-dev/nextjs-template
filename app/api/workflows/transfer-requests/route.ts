@@ -1,3 +1,59 @@
+/**
+ * TRANSFER REQUESTS API ROUTE
+ * 
+ * This API route handles transfer request workflow operations.
+ * 
+ * ENDPOINT: GET /api/workflows/transfer-requests - List transfer requests
+ * ENDPOINT: POST /api/workflows/transfer-requests - Create transfer request
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Transfer Requests):
+ * 1. Verify authentication
+ * 2. Parse and validate query parameters
+ * 3. Build where clause based on role and filters
+ * 4. Apply role-based filtering (Users see only their requests)
+ * 5. Execute paginated query
+ * 6. Return requests list with pagination metadata
+ * 
+ * POST (Create Transfer Request):
+ * 1. Verify authentication
+ * 2. Parse and validate request body
+ * 3. Create transfer request with Draft status
+ * 4. Create attachments (if provided)
+ * 5. Send notification email to supervisor (if assigned)
+ * 6. Return created request data
+ * 
+ * ROLE-BASED FILTERING:
+ * - User: Only sees requests they created
+ * - Supervisor: Sees all requests, filtered by tab (new/completed)
+ * - Manager: Sees all requests, filtered by tab (new/completed)
+ * 
+ * TAB FILTERING:
+ * - "all": All requests (for Supervisors/Managers)
+ * - "new": Requests awaiting action for current role
+ * - "completed": Requests with final status (approved/rejected)
+ * 
+ * QUERY PARAMETERS (GET):
+ * - tab: 'all', 'new', 'completed' (default: 'all')
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10)
+ * - search: Search query (title, fromLocation, toLocation)
+ * - status: Filter by specific status (optional)
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "title": "Transfer Request Title",
+ *   "fromLocation": "Location A",
+ *   "toLocation": "Location B",
+ *   "purpose": "Transfer purpose",
+ *   "supervisorId": "supervisor-id",
+ *   "attachmentsIds": ["upload-id-1", "upload-id-2"]
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"

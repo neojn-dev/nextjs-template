@@ -1,3 +1,51 @@
+/**
+ * ROLES API ROUTE
+ * 
+ * This API route handles role management operations.
+ * 
+ * ENDPOINT: GET /api/roles - List roles
+ * ENDPOINT: POST /api/roles - Create role
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Roles):
+ * 1. Verify authentication and admin role
+ * 2. Parse and validate query parameters
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return roles list with pagination metadata
+ * 
+ * POST (Create Role):
+ * 1. Verify authentication and admin role
+ * 2. Parse and validate request body
+ * 3. Check for duplicate role name
+ * 4. Create role in database
+ * 5. Return created role data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Requires Admin role
+ * - Duplicate role name prevention
+ * - Input validation with Zod
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (name, description)
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (name, description, createdAt, updatedAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "name": "Manager",
+ *   "description": "Manager role with elevated permissions",
+ *   "isActive": true
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'

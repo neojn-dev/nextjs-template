@@ -1,6 +1,58 @@
-"use client"
+/**
+ * FILE MANAGER PAGE COMPONENT
+ * 
+ * Server-side file management interface for authenticated users.
+ * 
+ * ROUTE: /files
+ * 
+ * WHAT IT DOES:
+ * - Lists files and folders in uploads directory
+ * - Allows creating folders
+ * - Allows uploading files
+ * - Allows deleting files and folders
+ * - Allows renaming/moving files and folders
+ * - Provides file preview (text files)
+ * - Supports drag-and-drop file upload
+ * 
+ * FEATURES:
+ * - Grid and list view modes
+ * - Sorting (name, size, modified date, type)
+ * - Filtering/search
+ * - File type icons
+ * - File preview (text files)
+ * - Bulk selection
+ * - Infinite scroll (lazy loading)
+ * - Folder navigation
+ * - Breadcrumb navigation
+ * - Path traversal prevention (security)
+ * 
+ * FILE OPERATIONS:
+ * - Create folder: Creates new folder in current directory
+ * - Upload file: Uploads file to current directory
+ * - Delete: Deletes selected file/folder
+ * - Rename: Renames file/folder
+ * - Move: Moves file/folder to different location
+ * - Preview: Shows content of text files
+ * 
+ * SECURITY:
+ * - Path traversal prevention (prevents ../ attacks)
+ * - Base directory restriction
+ * - Safe path resolution
+ * - Server-side validation
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive UI (drag-drop, sorting, filtering)
+ * - Uses React hooks (useState, useEffect, useMemo, useRef)
+ * - Handles file uploads
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ */
 
-import { useEffect, useMemo, useRef, useState } from "react"
+"use client"
 import { 
   Button 
 } from "@/components/ui/button"

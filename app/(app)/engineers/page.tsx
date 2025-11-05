@@ -1,6 +1,50 @@
-"use client"
+/**
+ * ENGINEERS PAGE COMPONENT
+ * 
+ * Engineer record management interface for authenticated users.
+ * 
+ * ROUTE: /engineers
+ * 
+ * WHAT IT DOES:
+ * - Lists all engineers in the system
+ * - Allows creating new engineer records
+ * - Allows editing existing engineer records
+ * - Allows deleting engineers
+ * - Allows bulk deletion
+ * - Provides engineer search and filtering
+ * - Shows engineer details (name, email, department, specialization, engineering type, etc.)
+ * 
+ * FEATURES:
+ * - Data table with pagination, sorting, filtering
+ * - Advanced filters (firstName, lastName, email, employeeId, department, specialization, engineeringType, status)
+ * - Search functionality
+ * - Engineer creation dialog
+ * - Engineer edit dialog
+ * - Engineer view dialog (detailed information)
+ * - Bulk operations (bulk delete)
+ * - Export functionality (CSV/Excel)
+ * - Status management (active/inactive)
+ * 
+ * ENGINEER FIELDS:
+ * - Basic info: firstName, lastName, email, phone, employeeId
+ * - Engineering info: department, specialization, engineeringType, programmingLanguages
+ * - Experience: yearsOfExperience, projectSuccessRate, codeQuality, innovationScore
+ * - Employment: salary, isActive
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because:
+ * - Requires interactive data table
+ * - Uses React hooks (useState, useEffect)
+ * - Uses session data (useSession)
+ * - Handles form submissions
+ * - Manages complex state
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - Protected by middleware
+ */
 
-import { useState, useEffect } from "react"
+"use client"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

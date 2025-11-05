@@ -1,3 +1,39 @@
+/**
+ * EMAIL VERIFICATION PAGE COMPONENT
+ * 
+ * This page verifies a user's email address after registration.
+ * 
+ * FLOW OVERVIEW:
+ * 1. User clicks verification link in email
+ * 2. Link contains token as query parameter (?token=abc123)
+ * 3. Page loads and extracts token from URL
+ * 4. Sends token to /api/auth/verify endpoint
+ * 5. API validates token and marks email as verified
+ * 6. Shows success message and redirects to signin
+ * 
+ * STATES:
+ * - Loading: Verifying token (shows spinner)
+ * - Success: Email verified successfully (shows success message)
+ * - Error: Token invalid/expired (shows error message)
+ * 
+ * SECURITY FEATURES:
+ * - Token is single-use (deleted after verification)
+ * - Token expires after 24 hours
+ * - Token validation happens server-side
+ * - Prevents multiple verification attempts (useRef guard)
+ * 
+ * SUSPENSE WRAPPER:
+ * Uses Suspense to handle async searchParams reading.
+ * Next.js 13+ requires Suspense for useSearchParams in some cases.
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because it needs:
+ * - useState for component state
+ * - useEffect for side effects
+ * - useSearchParams for URL parameters
+ * - Router for navigation
+ */
+
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
@@ -34,53 +70,125 @@ const itemVariants = {
   }
 }
 
+/**
+ * VERIFY PAGE CONTENT COMPONENT
+ * 
+ * Main component that handles email verification logic.
+ * Separated from wrapper to use Suspense properly.
+ */
 function VerifyPageContent() {
+  /**
+   * STATE MANAGEMENT
+   * 
+   * - isLoading: True while verifying token (shows loading spinner)
+   * - isVerified: True when verification succeeds (shows success message)
+   * - error: Error message if verification fails (shows error message)
+   */
   const [isLoading, setIsLoading] = useState(true)
   const [isVerified, setIsVerified] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  /**
+   * PREVENT DUPLICATE VERIFICATION ATTEMPTS
+   * 
+   * useRef stores a value that persists across renders but doesn't trigger re-renders.
+   * Used here to prevent multiple verification API calls if component re-renders.
+   * 
+   * WHY useRef INSTEAD OF useState?
+   * - Doesn't trigger re-render when changed
+   * - Persists across renders
+   * - Perfect for "did we already do this?" checks
+   */
   const hasAttemptedVerification = useRef(false)
+  
+  // Get token from URL query parameters
   const searchParams = useSearchParams()
   const router = useRouter()
-  const token = searchParams.get("token")
+  const token = searchParams.get("token") // Extract token from ?token=abc123
 
+  /**
+   * EMAIL VERIFICATION EFFECT
+   * 
+   * Runs once when component mounts (or when token changes).
+   * 
+   * STEP-BY-STEP FLOW:
+   * 1. Check if token exists in URL
+   * 2. Prevent duplicate attempts (useRef guard)
+   * 3. Call verification API endpoint
+   * 4. Handle response:
+   *    - Success: Set isVerified to true
+   *    - Error: Set error message
+   * 5. Set loading to false
+   * 
+   * WHY useEffect?
+   * - Runs after component mounts
+   * - Can perform async operations
+   * - Runs automatically (no user action needed)
+   */
   useEffect(() => {
     const verifyEmail = async () => {
+      // Validate token exists
       if (!token) {
         setError("No verification token provided")
         setIsLoading(false)
         return
       }
 
-      // Prevent multiple verification attempts using ref
+      /**
+       * PREVENT DUPLICATE REQUESTS
+       * 
+       * Check if we've already attempted verification.
+       * Prevents double API calls if component re-renders.
+       */
       if (hasAttemptedVerification.current) {
-        return
+        return // Already verifying, don't do it again
       }
 
+      // Mark as attempted
       hasAttemptedVerification.current = true
 
       try {
+        /**
+         * VERIFICATION API CALL
+         * 
+         * Send token to server for validation.
+         * Server checks:
+         * - Token exists in database
+         * - Token hasn't expired (24 hours)
+         * - Token hasn't been used already
+         * 
+         * If valid:
+         * - Marks user email as verified
+         * - Deletes verification token
+         * - Activates user account
+         */
         const response = await fetch(`/api/auth/verify?token=${token}`, {
           method: 'GET',
         })
 
         if (response.ok) {
+          // Verification successful!
           const data = await response.json()
           setError(null) // Clear any previous errors
-          setIsVerified(true)
+          setIsVerified(true) // Show success state
         } else {
+          // Verification failed
           const errorData = await response.json()
           setError(errorData.error || "Verification failed")
         }
       } catch (err) {
+        // Network error or unexpected error
         console.error("Verification fetch error:", err)
         setError("Network error occurred during verification")
       } finally {
+        // Always set loading to false, regardless of success/failure
         setIsLoading(false)
       }
     }
 
+    // Run verification when component mounts
     verifyEmail()
-  }, [token]) // Remove hasAttemptedVerification from dependencies
+  }, [token]) // Re-run if token changes (shouldn't happen, but defensive)
 
 
   

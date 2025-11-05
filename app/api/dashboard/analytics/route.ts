@@ -1,9 +1,65 @@
+/**
+ * DASHBOARD ANALYTICS API ROUTE
+ * 
+ * This API route provides aggregated analytics data for the dashboard.
+ * 
+ * ENDPOINT: GET /api/dashboard/analytics
+ * 
+ * FLOW OVERVIEW:
+ * 1. Verify user is authenticated
+ * 2. Parse query parameters (dateRange, department, status)
+ * 3. Calculate date range based on filter
+ * 4. Query database with aggregated queries
+ * 5. Return aggregated analytics data
+ * 
+ * PERFORMANCE:
+ * - Uses aggregated queries (COUNT, SUM, AVG)
+ * - Optimized for large datasets (5M+ records)
+ * - Efficient date filtering
+ * - Single query per entity type
+ * 
+ * QUERY PARAMETERS:
+ * - dateRange: '1month', '3months', '6months', '1year' (default: '6months')
+ * - department: Filter by department name (optional)
+ * - status: Filter by active status (optional)
+ * 
+ * DATA RETURNED:
+ * - Teachers: Total count, active count, average salary
+ * - Doctors: Total count, active count, average salary
+ * - Engineers: Total count, active count, average salary
+ * - Lawyers: Total count, active count, average salary
+ * 
+ * AUTHENTICATION:
+ * - Requires authenticated session
+ * - No specific role requirement (all authenticated users)
+ * 
+ * ERROR HANDLING:
+ * - Unauthorized: 401 (no session)
+ * - Generic errors: 500 Internal Server Error
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
 
+/**
+ * GET HANDLER
+ * 
+ * Handles GET requests to /api/dashboard/analytics
+ * 
+ * PROCESS:
+ * 1. Check authentication
+ * 2. Parse query parameters
+ * 3. Calculate date range
+ * 4. Build where conditions
+ * 5. Execute aggregated queries
+ * 6. Return analytics data
+ * 
+ * @param request - Next.js request object
+ * @returns JSON response with aggregated analytics data
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

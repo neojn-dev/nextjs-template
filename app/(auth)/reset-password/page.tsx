@@ -1,3 +1,48 @@
+/**
+ * RESET PASSWORD PAGE COMPONENT
+ * 
+ * This page allows users to set a new password after clicking reset link in email.
+ * 
+ * FLOW OVERVIEW:
+ * 1. User clicks reset link in email (contains token)
+ * 2. Page loads with token from URL (?token=abc123)
+ * 3. User enters new password (with requirements display)
+ * 4. User confirms new password
+ * 5. On submit, sends token + new password to /api/auth/reset-password
+ * 6. API validates token, hashes new password, updates database
+ * 7. Shows success message and redirects to signin
+ * 
+ * SECURITY FEATURES:
+ * - Token required (no token = form disabled)
+ * - Token validation server-side
+ * - Token expires after 1 hour
+ * - Token is single-use (deleted after reset)
+ * - Password requirements enforced
+ * - Password confirmation must match
+ * 
+ * PASSWORD VALIDATION:
+ * - Shows real-time requirements feedback
+ * - Minimum 8 characters
+ * - Requires uppercase, lowercase, number, special character
+ * - Confirmation must match
+ * 
+ * STATES:
+ * - Loading: Validating token or resetting password
+ * - Form: User enters new password
+ * - Success: Password reset successful (shows success message)
+ * - Error: Token invalid/expired (shows error message)
+ * 
+ * SUSPENSE WRAPPER:
+ * Uses Suspense to handle async searchParams reading.
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * Uses "use client" because it needs:
+ * - useState for component state
+ * - useEffect for token validation
+ * - useForm for form management
+ * - useSearchParams for URL parameters
+ */
+
 "use client"
 
 import { useState, useEffect, Suspense } from "react"
@@ -45,16 +90,40 @@ const itemVariants = {
   }
 }
 
+/**
+ * RESET PASSWORD PAGE CONTENT COMPONENT
+ * 
+ * Main component that handles password reset logic.
+ * Separated from wrapper to use Suspense properly.
+ */
 function ResetPasswordPageContent() {
+  /**
+   * STATE MANAGEMENT
+   * 
+   * - showPassword: Toggles password visibility
+   * - showConfirmPassword: Toggles confirm password visibility
+   * - isLoading: True while resetting password (shows spinner)
+   * - isSubmitted: True after successful reset (shows success message)
+   * - error: Error message if reset fails
+   * - password: Local password state for requirements checking
+   */
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [password, setPassword] = useState("")
+  const [password, setPassword] = useState("") // Local state for requirements display
+  
+  // Get token from URL query parameters
   const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  const token = searchParams.get("token") // Extract token from ?token=abc123
 
+  /**
+   * REACT HOOK FORM SETUP
+   * 
+   * Manages password and confirmPassword fields.
+   * watch() monitors password field for real-time requirements display.
+   */
   const {
     register,
     handleSubmit,
@@ -62,19 +131,47 @@ function ResetPasswordPageContent() {
     watch,
     setValue
   } = useForm<ResetPasswordForm>({
-    resolver: zodResolver(resetPasswordSchema),
+    resolver: zodResolver(resetPasswordSchema), // Validate password requirements
   })
 
+  // Watch password field for real-time requirements checking
   const watchedPassword = watch("password")
 
-  // Check if token is present
+  /**
+   * TOKEN VALIDATION CHECK
+   * 
+   * Validates that token exists in URL.
+   * Token is required - form won't work without it.
+   */
   useEffect(() => {
     if (!token) {
       setError("No reset token provided. Please use the link from your email.")
     }
   }, [token])
 
+  /**
+   * FORM SUBMISSION HANDLER
+   * 
+   * Resets user's password.
+   * 
+   * STEP-BY-STEP FLOW:
+   * 1. Validate token exists
+   * 2. Set loading state
+   * 3. Send token + new password to API
+   * 4. API validates token, hashes password, updates database
+   * 5. Show success or error message
+   * 
+   * WHAT THE API DOES:
+   * - Validates reset token (exists, not expired, not used)
+   * - Hashes new password with bcrypt
+   * - Updates user's passwordHash in database
+   * - Deletes reset token (single-use)
+   * - Returns success or error
+   * 
+   * @param data - Form data with password and confirmPassword
+   */
   const onSubmit = async (data: ResetPasswordForm) => {
+    // Validate token exists
     if (!token) {
       setError("No reset token provided")
       return
@@ -84,37 +181,66 @@ function ResetPasswordPageContent() {
     setError(null)
     
     try {
+      /**
+       * RESET PASSWORD API CALL
+       * 
+       * Send token and new password to server.
+       * Server will:
+       * - Validate token (exists, not expired, not used)
+       * - Hash new password with bcrypt
+       * - Update user's passwordHash
+       * - Delete reset token
+       */
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          token,
-          password: data.password,
+          token, // Reset token from URL
+          password: data.password, // New password (will be hashed server-side)
         }),
       })
 
       if (response.ok) {
+        // Password reset successful!
         setIsSubmitted(true)
       } else {
+        // Reset failed - show error message
         const errorData = await response.json()
         setError(errorData.error || "Failed to reset password")
       }
     } catch (error) {
+      // Network error or unexpected error
       console.error('Network error:', error)
       setError("Network error occurred. Please try again.")
     } finally {
+      // Always reset loading state
       setIsLoading(false)
     }
   }
 
+  /**
+   * PASSWORD CHANGE HANDLER
+   * 
+   * Updates local password state and form value.
+   * Used for real-time password requirements checking.
+   */
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-    setPassword(value)
-    setValue("password", value)
+    setPassword(value) // Update local state for requirements display
+    setValue("password", value) // Update form value
   }
 
+  /**
+   * CHECK PASSWORD REQUIREMENT STATUS
+   * 
+   * Tests if password meets a specific requirement.
+   * Used to show green checkmarks for met requirements.
+   * 
+   * @param regex - Regular expression for requirement
+   * @returns True if requirement is met, false otherwise
+   */
   const getRequirementStatus = (regex: RegExp) => {
     return regex.test(password)
   }

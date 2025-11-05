@@ -1,3 +1,69 @@
+/**
+ * USERS API ROUTE
+ * 
+ * This API route handles user management operations.
+ * 
+ * ENDPOINT: GET /api/users - List users
+ * ENDPOINT: POST /api/users - Create user
+ * 
+ * FLOW OVERVIEW:
+ * 
+ * GET (List Users):
+ * 1. Verify authentication and admin role
+ * 2. Parse and validate query parameters
+ * 3. Build where clause with filters
+ * 4. Execute paginated query
+ * 5. Return users list with pagination metadata
+ * 
+ * POST (Create User):
+ * 1. Verify authentication and admin role
+ * 2. Parse and validate request body
+ * 3. Check for duplicate username/email
+ * 4. Hash password
+ * 5. Create user with default role (if not specified)
+ * 6. Generate verification token
+ * 7. Send verification email
+ * 8. Send temporary password email (if admin-created)
+ * 9. Return created user data
+ * 
+ * SECURITY FEATURES:
+ * - Requires authentication
+ * - Requires Admin role
+ * - Password hashing (bcrypt, 12 rounds)
+ * - Duplicate username/email prevention
+ * - Email verification required
+ * - Temporary password for admin-created accounts
+ * 
+ * ADMIN-CREATED ACCOUNTS:
+ * - Sets mustChangePassword flag to true
+ * - Sets createdByAdmin flag to true
+ * - Generates temporary password
+ * - Sends temporary password email
+ * - User must change password on first login
+ * 
+ * QUERY PARAMETERS (GET):
+ * - page: Page number (default: 1)
+ * - limit: Items per page (default: 10, max: 100)
+ * - search: Search query (username, email, firstName, lastName)
+ * - roleId: Filter by role ID
+ * - isActive: Filter by active status ('true'/'false')
+ * - sortBy: Sort field (username, email, firstName, lastName, createdAt, updatedAt)
+ * - sortOrder: Sort direction ('asc'/'desc')
+ * 
+ * REQUEST BODY (POST):
+ * ```json
+ * {
+ *   "username": "johndoe",
+ *   "email": "john@example.com",
+ *   "firstName": "John",
+ *   "lastName": "Doe",
+ *   "roleId": "role-id",
+ *   "password": "SecurePass123!",
+ *   "confirmPassword": "SecurePass123!"
+ * }
+ * ```
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
