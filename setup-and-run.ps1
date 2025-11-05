@@ -1,34 +1,36 @@
 ﻿# NextJS Template App + MySQL Setup & Run Script (PowerShell)
 # Complete setup automation for Windows including MySQL database configuration
+# Requires: PowerShell 5.1+ (Windows 10/11 or Windows Server 2016+)
 
-$ErrorActionPreference = "Stop"
+# Set error handling - continue on error, but check exit codes manually
+$ErrorActionPreference = "Continue"
 
 # ============================================================
 # LOGGING FUNCTIONS
 # ============================================================
 
 function Write-Step {
-    param($Message)
+    param([string]$Message)
     Write-Host "[STEP] $Message" -ForegroundColor Blue
 }
 
 function Write-Success {
-    param($Message)
+    param([string]$Message)
     Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
 function Write-Warning {
-    param($Message)
+    param([string]$Message)
     Write-Host "[WARN] $Message" -ForegroundColor Yellow
 }
 
-function Write-Error {
-    param($Message)
+function Write-ErrorMsg {
+    param([string]$Message)
     Write-Host "[ERROR] $Message" -ForegroundColor Red
 }
 
 function Write-Info {
-    param($Message)
+    param([string]$Message)
     Write-Host "[INFO] $Message" -ForegroundColor Cyan
 }
 
@@ -37,7 +39,7 @@ function Write-Info {
 # ============================================================
 
 function Get-MySQLPath {
-    # Try to find MySQL executable
+    # Try to find MySQL executable in PATH first
     $mysqlPath = Get-Command mysql -ErrorAction SilentlyContinue
     if ($mysqlPath) {
         return $mysqlPath.Source
@@ -47,8 +49,10 @@ function Get-MySQLPath {
     $commonPaths = @(
         "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe",
         "C:\Program Files\MySQL\MySQL Server 8.1\bin\mysql.exe",
+        "C:\Program Files\MySQL\MySQL Server 8.2\bin\mysql.exe",
         "C:\Program Files (x86)\MySQL\MySQL Server 8.0\bin\mysql.exe",
-        "C:\Program Files (x86)\MySQL\MySQL Server 8.1\bin\mysql.exe"
+        "C:\Program Files (x86)\MySQL\MySQL Server 8.1\bin\mysql.exe",
+        "C:\Program Files (x86)\MySQL\MySQL Server 8.2\bin\mysql.exe"
     )
     
     foreach ($path in $commonPaths) {
@@ -57,15 +61,15 @@ function Get-MySQLPath {
         }
     }
     
-    # Don't fallback to "mysql" - throw an error instead
-    Write-Error "MySQL executable not found. Please ensure MySQL is installed and mysql.exe is in your PATH or at one of the standard installation locations."
+    # Error if not found
+    Write-ErrorMsg "MySQL executable not found. Please ensure MySQL is installed and mysql.exe is in your PATH or at one of the standard installation locations."
     throw "MySQL executable not found"
 }
 
 function Invoke-MySQLCommand {
     param(
         [string]$Command,
-        [string]$Password,
+        [string]$Password = "",
         [string]$Database = ""
     )
     
@@ -88,6 +92,10 @@ function Invoke-MySQLCommand {
         # Use --password= format for better compatibility
         $arguments += "--password=$Password"
     }
+    else {
+        # Try without password flag
+        $arguments += "--password="
+    }
     
     if ($Database) {
         $arguments += $Database
@@ -96,7 +104,7 @@ function Invoke-MySQLCommand {
     $arguments += "-e", $Command
     
     try {
-        # Use ProcessStartInfo to properly capture exit code (warnings don't affect exit code)
+        # Use ProcessStartInfo to properly capture exit code
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = $mysqlPath
         $psi.Arguments = ($arguments | ForEach-Object { 
@@ -123,7 +131,7 @@ function Invoke-MySQLCommand {
         if ($stderrText) {
             $stderrTrimmed = $stderrText.Trim()
             # Check if stderr contains actual errors (not just warnings)
-            if ($stderrTrimmed -match "ERROR\s+\d+") {
+            if ($stderrTrimmed -match "ERROR\s+\d+" -or $exitCode -ne 0) {
                 # It's an actual error, include it
                 if ($allOutput) {
                     $allOutput += "`n" + $stderrTrimmed
@@ -162,8 +170,10 @@ function Invoke-ExternalCommand {
     )
     
     try {
-        $output = & $Command $Arguments 2>&1
-        if ($LASTEXITCODE -eq 0 -or $IgnoreErrors) {
+        $output = & $Command $Arguments 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+        
+        if ($exitCode -eq 0 -or $IgnoreErrors) {
             return @{ Success = $true; Output = $output }
         }
         else {
@@ -183,8 +193,13 @@ function Encode-UrlPassword {
     }
     
     # URL encode special characters in password
-    $encoded = [System.Uri]::EscapeDataString($Password)
-    return $encoded
+    try {
+        $encoded = [System.Uri]::EscapeDataString($Password)
+        return $encoded
+    }
+    catch {
+        return $Password
+    }
 }
 
 function Start-ServerAndShowLogs {
@@ -271,15 +286,20 @@ Write-Host ""
 
 Write-Step "Checking administrator privileges..."
 
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
-
-if (-not $isAdmin) {
-    Write-Error "This script must be run as Administrator!"
-    Write-Info "Please right-click PowerShell and select 'Run as administrator'"
-    exit 1
+try {
+    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+    
+    if (-not $isAdmin) {
+        Write-ErrorMsg "This script must be run as Administrator!"
+        Write-Info "Please right-click PowerShell and select 'Run as administrator'"
+        exit 1
+    }
+    
+    Write-Success "Running as Administrator"
 }
-
-Write-Success "Running as Administrator"
+catch {
+    Write-Warning "Could not verify admin privileges, continuing anyway..."
+}
 
 # ============================================================
 # STEP 2: CHECK PREREQUISITES
@@ -289,27 +309,44 @@ Write-Step "Checking prerequisites..."
 
 # Check Node.js
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Error "Node.js is not installed!"
+    Write-ErrorMsg "Node.js is not installed!"
     Write-Info "Download from: https://nodejs.org/"
     exit 1
 }
 
-$nodeVersion = node --version
-Write-Success "Node.js found: $nodeVersion"
-
-# Check npm
-if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    Write-Error "npm is not installed!"
+try {
+    $nodeVersion = node --version
+    Write-Success "Node.js found: $nodeVersion"
+}
+catch {
+    Write-ErrorMsg "Failed to get Node.js version"
     exit 1
 }
 
-$npmVersion = npm --version
-Write-Success "npm found: v$npmVersion"
+# Check npm
+if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+    Write-ErrorMsg "npm is not installed!"
+    exit 1
+}
+
+try {
+    $npmVersion = npm --version
+    Write-Success "npm found: v$npmVersion"
+}
+catch {
+    Write-ErrorMsg "Failed to get npm version"
+    exit 1
+}
 
 # Check git (optional)
 if (Get-Command git -ErrorAction SilentlyContinue) {
-    $gitVersion = git --version
-    Write-Success "Git found: $gitVersion"
+    try {
+        $gitVersion = git --version
+        Write-Success "Git found: $gitVersion"
+    }
+    catch {
+        Write-Warning "Git version check failed (optional)"
+    }
 }
 else {
     Write-Warning "Git is not installed (optional)"
@@ -325,14 +362,19 @@ Write-Step "Checking MySQL installation..."
 
 # Check for MySQL service with different possible names
 $mysqlService = $null
-$serviceNames = @("MySQL80", "MySQL", "MySQL57", "MySQL81")
+$serviceNames = @("MySQL80", "MySQL", "MySQL57", "MySQL81", "MySQL82")
 
 foreach ($serviceName in $serviceNames) {
-    $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-    if ($service) {
-        $mysqlService = $service
-        Write-Success "MySQL service found: $serviceName"
-        break
+    try {
+        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+        if ($service) {
+            $mysqlService = $service
+            Write-Success "MySQL service found: $serviceName"
+            break
+        }
+    }
+    catch {
+        # Continue searching
     }
 }
 
@@ -346,10 +388,17 @@ if ($mysqlService) {
         try {
             Start-Service -Name $mysqlService.Name
             Start-Sleep -Seconds 3
-            Write-Success "MySQL service started"
+            $mysqlService.Refresh()
+            if ($mysqlService.Status -eq "Running") {
+                Write-Success "MySQL service started"
+            }
+            else {
+                Write-ErrorMsg "MySQL service failed to start"
+                exit 1
+            }
         }
         catch {
-            Write-Error "Failed to start MySQL service"
+            Write-ErrorMsg "Failed to start MySQL service: $($_.Exception.Message)"
             exit 1
         }
     }
@@ -369,22 +418,27 @@ else {
     $continue = Read-Host "Have you installed MySQL? (yes/no)"
     
     if ($continue -ne "yes" -and $continue -ne "y") {
-        Write-Error "MySQL installation required. Please install and try again."
+        Write-ErrorMsg "MySQL installation required. Please install and try again."
         exit 1
     }
     
     # Check again
     foreach ($serviceName in $serviceNames) {
-        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-        if ($service) {
-            $mysqlService = $service
-            Write-Success "MySQL service found: $serviceName"
-            break
+        try {
+            $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+            if ($service) {
+                $mysqlService = $service
+                Write-Success "MySQL service found: $serviceName"
+                break
+            }
+        }
+        catch {
+            # Continue searching
         }
     }
     
     if (-not $mysqlService) {
-        Write-Error "MySQL service still not found"
+        Write-ErrorMsg "MySQL service still not found"
         exit 1
     }
 }
@@ -428,18 +482,19 @@ else {
         if ($setPasswordResult.Success) {
             Write-Success "Password set successfully!"
             # Test again with password
+            Start-Sleep -Seconds 1
             $testResult = Invoke-MySQLCommand -Command "SELECT 1;" -Password $rootPasswordPlain
             if ($testResult.Success) {
                 Write-Success "MySQL connection successful with root/password!"
             }
             else {
-                Write-Error "Failed to connect even after setting password."
+                Write-ErrorMsg "Failed to connect even after setting password."
                 Write-Info "Output: $($testResult.Output)"
                 exit 1
             }
         }
         else {
-            Write-Error "Failed to set MySQL password."
+            Write-ErrorMsg "Failed to set MySQL password."
             Write-Info "Please manually set MySQL root password to 'password':"
             Write-Info "  1. Run: mysql -u root"
             Write-Info "  2. In MySQL: ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
@@ -449,7 +504,7 @@ else {
         }
     }
     else {
-        Write-Error "Failed to connect to MySQL."
+        Write-ErrorMsg "Failed to connect to MySQL."
         Write-Info ""
         Write-Info "Connection test with password 'password' failed:"
         Write-Info "  Output: $($testResult.Output)"
@@ -461,7 +516,13 @@ else {
         Write-Info "  1. MySQL service is running"
         Write-Info "  2. MySQL root password is set to 'password'"
         Write-Info "  3. Or set it manually by running:"
-        Write-Info "     & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u root -p"
+        $mysqlPath = Get-MySQLPath -ErrorAction SilentlyContinue
+        if ($mysqlPath) {
+            Write-Info "     & '$mysqlPath' -u root -p"
+        }
+        else {
+            Write-Info "     mysql -u root -p"
+        }
         Write-Info "     (Enter your current password when prompted)"
         Write-Info "     Then in MySQL run these commands:"
         Write-Info "     ALTER USER 'root'@'localhost' IDENTIFIED BY 'password';"
@@ -488,7 +549,7 @@ if ($createDbResult.Success) {
     Write-Success "Database 'next_template_db' created/verified"
 }
 else {
-    Write-Error "Failed to create database"
+    Write-ErrorMsg "Failed to create database"
     Write-Info "Output: $($createDbResult.Output)"
     exit 1
 }
@@ -502,7 +563,7 @@ Write-Host ""
 Write-Step "Updating environment configuration..."
 
 $envFile = ".env"
-$scriptPath = Get-Location
+$scriptPath = (Get-Location).Path
 
 if (-not (Test-Path $envFile)) {
     Write-Warning ".env file not found"
@@ -513,7 +574,7 @@ if (-not (Test-Path $envFile)) {
         Write-Success ".env file created from .env.example"
     }
     else {
-        Write-Error ".env.example not found"
+        Write-ErrorMsg ".env.example not found"
         exit 1
     }
 }
@@ -522,7 +583,13 @@ else {
 }
 
 # Read current .env
-$envContent = Get-Content $envFile -Raw
+try {
+    $envContent = Get-Content $envFile -Raw -ErrorAction Stop
+}
+catch {
+    Write-ErrorMsg "Failed to read .env file: $($_.Exception.Message)"
+    exit 1
+}
 
 # Prepare database URL with URL-encoded password
 $encodedPassword = Encode-UrlPassword -Password $rootPasswordPlain
@@ -535,17 +602,23 @@ else {
 }
 
 # Update or create DATABASE_URL line
-if ($envContent -match 'DATABASE_URL=') {
-    $envContent = $envContent -replace 'DATABASE_URL=.*', "DATABASE_URL=`"$databaseUrl`""
+if ($envContent -match 'DATABASE_URL\s*=') {
+    $envContent = $envContent -replace 'DATABASE_URL\s*=.*', "DATABASE_URL=`"$databaseUrl`""
 }
 else {
     $envContent = "DATABASE_URL=`"$databaseUrl`"`r`n" + $envContent
 }
 
-# Write back to .env
-[System.IO.File]::WriteAllText("$scriptPath\.env", $envContent, [System.Text.Encoding]::UTF8)
-
-Write-Success ".env file updated with MySQL connection"
+# Write back to .env with proper encoding
+try {
+    $envFilePath = Join-Path $scriptPath ".env"
+    [System.IO.File]::WriteAllText($envFilePath, $envContent, [System.Text.Encoding]::UTF8)
+    Write-Success ".env file updated with MySQL connection"
+}
+catch {
+    Write-ErrorMsg "Failed to write .env file: $($_.Exception.Message)"
+    exit 1
+}
 
 Write-Host ""
 
@@ -570,7 +643,7 @@ else {
         Write-Info "Note: Some peer dependency warnings were ignored, but installation succeeded."
     }
     else {
-        Write-Error "Failed to install dependencies"
+        Write-ErrorMsg "Failed to install dependencies"
         Write-Info "Output: $($installResult.Output)"
         Write-Info "You can try manually: npm install --legacy-peer-deps"
         exit 1
@@ -599,7 +672,7 @@ else {
         Write-Success "Prisma reinstalled successfully!"
     }
     else {
-        Write-Error "Failed to install Prisma"
+        Write-ErrorMsg "Failed to install Prisma"
         Write-Info "Output: $($installPrisma.Output)"
         exit 1
     }
@@ -627,7 +700,7 @@ else {
         Write-Success "Prisma client generated!"
     }
     else {
-        Write-Error "Failed to generate Prisma client"
+        Write-ErrorMsg "Failed to generate Prisma client"
         Write-Info "Output: $($generateAlt.Output)"
         exit 1
     }
@@ -644,6 +717,7 @@ Write-Step "Checking migration status..."
 $migrationSuccess = $false
 $maxRetries = 3
 $retryCount = 0
+$migrationStatus = ""
 
 try {
     $migrationStatusResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "status") -IgnoreErrors $true
@@ -700,34 +774,8 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
             }
         }
         elseif ($retryCount -eq 2) {
-            # Second attempt: Check for failed migrations and resolve
-            Write-Warning "Attempt $retryCount : Migration issues detected."
-            Write-Info "Checking if database reset is needed..."
-            
-            if ($migrationStatus -match "failed to apply|Cannot drop table|foreign key constraint") {
-                Write-Warning "Database may be in inconsistent state."
-                Write-Info "Attempting to fix by applying migrations with force resolve..."
-                
-                # Try to resolve failed migrations
-                $failedMatch = $migrationStatus | Select-String -Pattern "migration\s+(\S+)\s+failed" -AllMatches
-                if ($failedMatch -and $failedMatch.Matches.Count -gt 0) {
-                    $failedMigration = $failedMatch.Matches[0].Groups[1].Value
-                    Write-Info "Resolving failed migration: $failedMigration"
-                    "y" | Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "resolve", "--rolled-back", $failedMigration) -IgnoreErrors $true | Out-Null
-                }
-                
-                # Try deploy again
-                Write-Info "Retrying migrations after resolution..."
-                $deployResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "deploy")
-                if ($deployResult.Success) {
-                    Write-Success "Database migrations completed after resolution!"
-                    $migrationSuccess = $true
-                    break
-                }
-            }
-            
-            # Last resort: Try dev mode
-            Write-Info "Final attempt: Trying migrate dev mode..."
+            # Second attempt: Try dev mode
+            Write-Info "Attempt $retryCount : Trying migrate dev mode..."
             $devResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "dev", "--name", "auto_fix")
             if ($devResult.Success) {
                 Write-Success "Database migrations completed!"
@@ -737,15 +785,13 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
         }
         elseif ($retryCount -eq 3) {
             # Final attempt: Reset and rebuild
-            Write-Error "All migration attempts failed."
-            Write-Warning "Attempting automatic database reset..."
-            Write-Info "Resetting database to fix migration issues..."
+            Write-Warning "Attempt $retryCount : All migration attempts failed."
+            Write-Info "Attempting automatic database reset..."
             
             try {
                 # Reset database
-                "y" | Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "reset", "--force", "--skip-seed") -IgnoreErrors $true | Out-Null
-                
                 $resetResult = Invoke-ExternalCommand -Command "npx" -Arguments @("prisma", "migrate", "reset", "--force", "--skip-seed") -IgnoreErrors $true
+                
                 if ($resetResult.Success) {
                     Write-Success "Database reset successful!"
                     Write-Info "Applying fresh migrations..."
@@ -764,7 +810,7 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
                 }
             }
             catch {
-                Write-Error "Database reset failed: $_"
+                Write-ErrorMsg "Database reset failed: $_"
             }
         }
     }
@@ -777,7 +823,7 @@ while ($retryCount -lt $maxRetries -and -not $migrationSuccess) {
 }
 
 if (-not $migrationSuccess) {
-    Write-Error "Failed to complete database migrations after all attempts"
+    Write-ErrorMsg "Failed to complete database migrations after all attempts"
     Write-Info "You may need to manually run: npx prisma migrate reset"
     exit 1
 }
@@ -800,10 +846,10 @@ while ($seedRetries -lt $seedMaxRetries -and -not $seedSuccess) {
     if ($seedResult.Success) {
         Write-Success "Database seeded successfully!"
         Write-Info "Sample data includes:"
-        Write-Info '  - 3 roles (Admin, Manager, User)'
-        Write-Info '  - 10 test users (admin, manager, analyst, etc.)'
+        Write-Info '  - Roles (Admin, Manager, Supervisor, User)'
+        Write-Info '  - Test users (admin, manager, supervisor, analyst, etc.)'
         Write-Info "  - 100 Teachers, Doctors, Engineers, Lawyers"
-        Write-Info "  - 100 Master Data records"
+        Write-Info "  - 10 Transfer Requests with workflow data"
         $seedSuccess = $true
     }
     else {
@@ -858,7 +904,7 @@ foreach ($file in $requiredFiles) {
         Write-Success "$file exists"
     }
     else {
-        Write-Error "$file is missing"
+        Write-ErrorMsg "$file is missing"
         exit 1
     }
 }
@@ -896,6 +942,13 @@ Write-Host "     Email:    manager@example.com"
 Write-Host "     Role:     Manager"
 Write-Host ""
 
+Write-Host "  👔 SUPERVISOR ACCOUNT" -ForegroundColor Yellow
+Write-Host "     Username: supervisor"
+Write-Host "     Password: password123"
+Write-Host "     Email:    supervisor@example.com"
+Write-Host "     Role:     Supervisor"
+Write-Host ""
+
 Write-Host "  👤 USER ACCOUNTS" -ForegroundColor Yellow
 Write-Host "     Username: analyst"
 Write-Host "     Password: password123"
@@ -921,6 +974,7 @@ Write-Host "============================================================" -Foreg
 Write-Host "  • Application:     http://localhost:3000"
 Write-Host "  • Sign In:        http://localhost:3000/signin"
 Write-Host "  • Dashboard:      http://localhost:3000/dashboard"
+Write-Host "  • Transfer Requests: http://localhost:3000/workflows/transfer-requests"
 Write-Host "  • Prisma Studio:  http://localhost:5555"
 Write-Host ""
 
@@ -951,9 +1005,10 @@ Write-Step "Starting Prisma Studio..."
 Write-Info "Prisma Studio will be available at http://localhost:5555"
 
 # Get current directory for job
-$currentDir = Get-Location
+$currentDir = (Get-Location).Path
 
 # Start Prisma Studio in background
+$prismaJob = $null
 try {
     $prismaJob = Start-Job -ScriptBlock {
         param($workingDir)
@@ -969,6 +1024,7 @@ try {
     }
     else {
         Write-Warning "Prisma Studio job may have failed to start"
+        $prismaJob = $null
     }
 }
 catch {
@@ -996,6 +1052,7 @@ Write-Host ""
 
 # Start Next.js dev server in background
 Write-Info "Starting Next.js server..."
+$nextjsJob = $null
 try {
     $nextjsJob = Start-Job -ScriptBlock {
         param($workingDir)
@@ -1008,7 +1065,7 @@ try {
     }
 }
 catch {
-    Write-Error "Failed to start Next.js server: $_"
+    Write-ErrorMsg "Failed to start Next.js server: $_"
     if ($prismaJob) {
         Stop-Job -Job $prismaJob -ErrorAction SilentlyContinue
         Remove-Job -Job $prismaJob -ErrorAction SilentlyContinue
@@ -1022,7 +1079,7 @@ Start-Sleep -Seconds 5
 
 # Check if server is responding
 $serverReady = $false
-$maxWaitTime = 15
+$maxWaitTime = 30
 $waitCount = 0
 
 while (-not $serverReady -and $waitCount -lt $maxWaitTime) {
@@ -1049,7 +1106,7 @@ while (-not $serverReady -and $waitCount -lt $maxWaitTime) {
 }
 
 if (-not $serverReady) {
-    Write-Error "Next.js server failed to start properly"
+    Write-ErrorMsg "Next.js server failed to start properly"
     Write-Info "Showing server logs..."
     Receive-Job -Job $nextjsJob -ErrorAction SilentlyContinue
     Stop-Job -Job $nextjsJob, $prismaJob -ErrorAction SilentlyContinue
