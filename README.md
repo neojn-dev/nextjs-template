@@ -216,7 +216,12 @@ exit;
 
 #### Step 5: Setup Database Schema
 
+**Important:** Run all database commands from the project root directory (where `package.json` is located), not from the `prisma/` folder.
+
 ```bash
+# Make sure you're in the project root directory
+cd /path/to/my-nextjs-app
+
 # Generate Prisma client
 npm run db:generate
 
@@ -226,6 +231,17 @@ npm run db:migrate
 # Seed database with sample data
 npm run db:seed
 ```
+
+**Alternative:** If you prefer to run Prisma commands directly (without npm scripts), you can use:
+
+```bash
+# From project root directory only
+npx prisma generate
+npx prisma migrate dev
+npx prisma db seed
+```
+
+**Why from root?** Prisma automatically finds `prisma/schema.prisma` and reads `.env` from the project root, so you must run commands from there.
 
 #### Step 6: Start Development Server
 
@@ -627,8 +643,13 @@ SMTP_PASS="your-password"
 
 ### Common Issues
 
+**Note:** All database commands (`npm run db:*`) should be run from the project root directory where `package.json` is located.
+
 **Database Connection Error**
 ```bash
+# Ensure you're in the project root directory
+cd /path/to/my-nextjs-app
+
 # Check MySQL is running
 # macOS: brew services list
 # Windows: Check Services panel
@@ -668,6 +689,16 @@ npm run db:migrate
 # Reinstall dependencies
 rm -rf node_modules package-lock.json
 npm install
+```
+
+**Dependency Conflict Errors (ERESOLVE)**
+```bash
+# If you see peer dependency conflicts, try:
+npm install --legacy-peer-deps
+
+# Or clean install:
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
 ```
 
 **Learn More:** [Troubleshooting Guide](./docs/23-troubleshooting.md)

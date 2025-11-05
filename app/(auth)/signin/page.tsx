@@ -1,3 +1,46 @@
+/**
+ * SIGN IN PAGE COMPONENT
+ * 
+ * This is the user sign-in page where users log into their accounts.
+ * 
+ * FLOW OVERVIEW:
+ * 1. User enters username/email and password
+ * 2. Form validates input using Zod schema (signinSchema)
+ * 3. On submit, calls NextAuth signIn() function
+ * 4. NextAuth validates credentials against database
+ * 5. If valid, creates session and redirects to dashboard
+ * 6. If invalid, displays error message
+ * 
+ * KEY TECHNOLOGIES:
+ * - React Hook Form: Manages form state and validation
+ * - Zod: Schema validation for type-safe form validation
+ * - NextAuth.js: Handles authentication logic
+ * - Framer Motion: Adds smooth animations
+ * 
+ * SECURITY FEATURES:
+ * - Password is hidden by default (toggle visibility)
+ * - Credentials validated server-side via NextAuth
+ * - "Remember me" option extends session duration
+ * - Error messages don't reveal if email exists (prevents enumeration)
+ * 
+ * FORM VALIDATION:
+ * - identifier: Required, can be username or email
+ * - password: Required
+ * - rememberMe: Optional checkbox
+ * 
+ * ERROR HANDLING:
+ * - Network errors: Shows generic error message
+ * - Invalid credentials: Shows "Invalid credentials" message
+ * - Deactivated account: Shows specific message about account status
+ * 
+ * CLIENT-SIDE COMPONENT:
+ * This component uses "use client" because it needs:
+ * - useState for managing component state
+ * - useEffect for mounting check
+ * - Event handlers for form submission
+ * - Browser APIs (router navigation)
+ */
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -30,37 +73,76 @@ import { handleApiError, getErrorMessage, ERROR_MESSAGES } from "@/lib/error-han
 
 
 
+/**
+ * ANIMATION VARIANTS
+ * 
+ * These define the animation states for Framer Motion.
+ * - containerVariants: Controls parent container animations
+ * - itemVariants: Controls individual child element animations
+ * 
+ * Animation Pattern:
+ * - Elements start hidden (opacity: 0, moved down 20px)
+ * - Animate to visible (opacity: 1, original position)
+ * - Stagger children for sequential appearance
+ */
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
+      staggerChildren: 0.1 // Children appear 0.1s apart
     }
   }
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 20 }, // Start invisible, 20px down
   visible: {
     opacity: 1,
-    y: 0,
+    y: 0, // End visible, at original position
     transition: {
-      duration: 0.5,
-      ease: "easeOut"
+      duration: 0.5, // Animation takes 0.5 seconds
+      ease: "easeOut" // Easing function for smooth motion
     }
   }
 }
 
 export default function SignInPage() {
+  /**
+   * STATE MANAGEMENT
+   * 
+   * React useState hook manages component state:
+   * - showPassword: Toggles password visibility (eye icon)
+   * - isLoading: Prevents duplicate submissions and shows loading state
+   * - socialLoading: Tracks which social login button is loading (if any)
+   * - error: Stores error message to display to user
+   * - mounted: Prevents hydration mismatch (Next.js SSR issue)
+   */
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [socialLoading, setSocialLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  
+  // Next.js router for programmatic navigation
   const router = useRouter()
 
-  // All hooks must be called before any conditional returns
+  /**
+   * REACT HOOK FORM SETUP
+   * 
+   * useForm hook manages form state, validation, and submission:
+   * - register: Registers input fields with the form
+   * - handleSubmit: Wraps onSubmit function with validation
+   * - formState.errors: Contains validation errors for each field
+   * - setValue: Programmatically sets field values
+   * - watch: Watches field values for real-time updates
+   * 
+   * zodResolver: Integrates Zod schema validation with React Hook Form
+   * This means validation happens automatically based on signinSchema
+   * 
+   * IMPORTANT: All hooks must be called before any conditional returns
+   * This is a React rule to ensure hooks are called in the same order every render
+   */
   const {
     register,
     handleSubmit,
@@ -68,35 +150,93 @@ export default function SignInPage() {
     setValue,
     watch
   } = useForm<SigninForm>({
-    resolver: zodResolver(signinSchema),
+    resolver: zodResolver(signinSchema), // Use Zod schema for validation
     defaultValues: {
-      rememberMe: false
+      rememberMe: false // Default "remember me" to unchecked
     }
   })
 
+  // Watch the rememberMe field value for real-time updates
   const rememberMe = watch("rememberMe")
 
-  // Ensure component is mounted before rendering
+  /**
+   * MOUNT CHECK
+   * 
+   * This useEffect ensures the component is mounted before rendering.
+   * WHY? Next.js uses Server-Side Rendering (SSR), which can cause hydration mismatches
+   * when client-side code differs from server-rendered HTML.
+   * 
+   * By checking mounted state, we ensure:
+   * - Server renders a loading state
+   * - Client renders the full form after mount
+   * - Prevents React hydration errors
+   */
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  /**
+   * FORM SUBMISSION HANDLER
+   * 
+   * This function is called when the user submits the form.
+   * It handles the complete authentication flow:
+   * 
+   * STEP-BY-STEP FLOW:
+   * 1. Prevent duplicate submissions (check isLoading)
+   * 2. Set loading state to show spinner
+   * 3. Clear any previous errors
+   * 4. Call NextAuth signIn() function with credentials
+   * 5. Handle response:
+   *    - If error: Check for specific error cases (deactivated account)
+   *    - If success: Redirect to dashboard
+   * 6. Always reset loading state in finally block
+   * 
+   * @param data - Form data validated by Zod schema (SigninForm type)
+   */
   const onSubmit = async (data: SigninForm) => {
-    if (isLoading) return // Prevent multiple submissions
+    // Prevent multiple submissions while request is in progress
+    if (isLoading) return
     
+    // Set loading state (shows spinner, disables form)
     setIsLoading(true)
-    setError(null)
+    setError(null) // Clear any previous errors
     
     try {
+      /**
+       * NEXTAUTH SIGN IN
+       * 
+       * signIn() is a NextAuth.js client-side function that:
+       * 1. Sends credentials to /api/auth/[...nextauth]/route.ts
+       * 2. NextAuth validates credentials against database
+       * 3. If valid, creates a JWT token and session cookie
+       * 4. Returns result object with ok/error status
+       * 
+       * Parameters:
+       * - "credentials": The provider name (defined in lib/auth.ts)
+       * - identifier: Username or email
+       * - password: User's password
+       * - redirect: false - We handle redirect manually to show errors
+       */
       const result = await signIn("credentials", {
         identifier: data.identifier,
         password: data.password,
-        redirect: false,
+        redirect: false, // Don't auto-redirect, we'll handle it manually
       })
 
+      // Handle authentication errors
       if (result?.error) {
-        // Check if the user exists but is deactivated
+        /**
+         * ERROR HANDLING
+         * 
+         * When signIn() returns an error, we need to determine why:
+         * - Invalid credentials (wrong password)
+         * - Account not verified (email verification pending)
+         * - Account deactivated (admin disabled account)
+         * 
+         * We check for deactivated accounts specifically to show a helpful message
+         */
         try {
+          // Check if user exists but account is deactivated
           const checkUserResponse = await fetch('/api/auth/check-user-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -105,24 +245,45 @@ export default function SignInPage() {
           
           if (checkUserResponse.ok) {
             const userData = await checkUserResponse.json()
+            // If account exists but is inactive, show specific message
             if (userData.exists && !userData.isActive) {
               setError("Your account has been deactivated. Please contact your administrator.")
               return
             }
           }
         } catch (error) {
+          // If status check fails, continue with generic error
           console.warn('Failed to check user status:', error)
         }
         
+        // Show generic invalid credentials error
+        // This prevents revealing whether email exists (security best practice)
         setError(ERROR_MESSAGES.INVALID_CREDENTIALS)
       } else if (result?.ok) {
-        // Use replace instead of push to prevent back navigation issues
+        /**
+         * SUCCESS HANDLING
+         * 
+         * Authentication successful! Redirect to dashboard.
+         * 
+         * router.replace() vs router.push():
+         * - replace() replaces current history entry (can't go back to signin)
+         * - push() adds new history entry (can navigate back)
+         * 
+         * Using replace() prevents users from going back to signin page after login
+         */
         router.replace("/dashboard")
       }
     } catch (error) {
+      /**
+       * EXCEPTION HANDLING
+       * 
+       * Catch any unexpected errors (network failures, etc.)
+       * handleApiError() formats errors consistently
+       */
       const appError = handleApiError(error)
       setError(appError.message)
     } finally {
+      // Always reset loading state, even if error occurred
       setIsLoading(false)
     }
   }

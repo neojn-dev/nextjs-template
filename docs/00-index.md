@@ -55,6 +55,7 @@ This documentation is organized into several sections, each covering different a
 - **[28-files-folders-interactions.md](./28-files-folders-interactions.md)** - Complete guide to all files and folders, their interactions, and when they're used
 - **[29-files-quick-reference.md](./29-files-quick-reference.md)** - Quick reference for file relationships and where to find things
 - **[30-file-interactions-examples.md](./30-file-interactions-examples.md)** - Real code examples showing how files interact
+- **[31-files-and-folders-complete-reference.md](./31-files-and-folders-complete-reference.md)** - Comprehensive mapping of every file and folder with detailed usage explanations
 
 ## 🎯 Quick Navigation
 
@@ -164,6 +165,7 @@ Advanced topics for experienced developers:
 | [Code Walkthrough: Components](./26-code-walkthrough-components.md) | How reusable components work, TanStack Table | DataTable component |
 | [Code Walkthrough: Database](./27-code-walkthrough-database.md) | How Prisma queries work, relations, transactions | Real query examples |
 | [Files & Folders Guide](./28-files-folders-interactions.md) | Complete reference to all files, their interactions, and usage | File dependency maps |
+| [Complete Files Reference](./31-files-and-folders-complete-reference.md) | Detailed mapping of every file and folder with usage explanations | Complete file inventory |
 
 **Start here if you want to understand the actual code!**
 

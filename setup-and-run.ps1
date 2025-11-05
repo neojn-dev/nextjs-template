@@ -562,9 +562,19 @@ if ($installResult.Success) {
     Write-Success "Dependencies installed successfully!"
 }
 else {
-    Write-Error "Failed to install dependencies"
-    Write-Info "Output: $($installResult.Output)"
-    exit 1
+    Write-Warning "Standard install failed, trying with legacy peer deps..."
+    $installResultLegacy = Invoke-ExternalCommand -Command "npm" -Arguments @("install", "--legacy-peer-deps")
+    
+    if ($installResultLegacy.Success) {
+        Write-Success "Dependencies installed successfully with --legacy-peer-deps!"
+        Write-Info "Note: Some peer dependency warnings were ignored, but installation succeeded."
+    }
+    else {
+        Write-Error "Failed to install dependencies"
+        Write-Info "Output: $($installResult.Output)"
+        Write-Info "You can try manually: npm install --legacy-peer-deps"
+        exit 1
+    }
 }
 
 Write-Host ""

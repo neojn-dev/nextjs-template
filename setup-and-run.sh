@@ -118,11 +118,19 @@ echo
 print_step "Installing dependencies..."
 print_info "This may take a few minutes..."
 
+# Try normal install first
 if npm install; then
     print_success "Dependencies installed successfully!"
 else
-    print_error "Failed to install dependencies. Please check your internet connection and try again."
-    exit 1
+    print_warning "Standard install failed, trying with legacy peer deps..."
+    if npm install --legacy-peer-deps; then
+        print_success "Dependencies installed successfully with --legacy-peer-deps!"
+        print_info "Note: Some peer dependency warnings were ignored, but installation succeeded."
+    else
+        print_error "Failed to install dependencies. Please check your internet connection and try again."
+        print_info "You can try manually: npm install --legacy-peer-deps"
+        exit 1
+    fi
 fi
 
 echo
